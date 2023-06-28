@@ -1,7 +1,5 @@
 package cpu
 
-import "fmt"
-
 type CPU struct {
 	register_a      uint8
 	register_x      uint8
@@ -37,7 +35,7 @@ func (cpu *CPU) reset() {
 	cpu.register_a = 0
 	cpu.register_x = 0
 	cpu.status = 0
-	cpu.opcodes = OpCodesMapFunc()
+	cpu.opcodes = OpCodes
 
 	cpu.program_counter = cpu.mem_read_u16(0xFFFC)
 }
@@ -62,6 +60,10 @@ func (cpu *CPU) run() {
 		opcode := opcodes[code]
 
 		switch code {
+		case 0x29, 0x25, 0x35, 0x2d, 0x3d, 0x39, 0x21, 0x31:
+			cpu.and(opcode.mode)
+		case 0x0a, 0x06, 0x16, 0x0e, 0x1e:
+			cpu.asl(opcode.mode)
 		case 0xa9, 0xa5, 0xb5, 0xad, 0xbd, 0xb9, 0xa1, 0xb1:
 			cpu.lda(opcode.mode)
 		case 0x85, 0x95, 0x8d, 0x9d, 0x99, 0x81, 0x91:
@@ -77,93 +79,5 @@ func (cpu *CPU) run() {
 		}
 
 		cpu.program_counter += uint16(opcode.len) - 1
-	}
-}
-
-type AddressingMode int
-
-const (
-	Immediate = iota
-	ZeroPage
-	ZeroPage_X
-	ZeroPage_Y
-	Absolute
-	Absolute_X
-	Absolute_Y
-	Indirect_X
-	Indirect_Y
-	NoneAddressing
-)
-
-func (cpu *CPU) getOperandAddress(mode AddressingMode) uint16 {
-	switch mode {
-	case Immediate:
-		return cpu.program_counter
-	case ZeroPage:
-		return uint16(cpu.mem_read(cpu.program_counter))
-	case Absolute:
-		return cpu.mem_read_u16(cpu.program_counter)
-	case ZeroPage_X:
-		pos := cpu.mem_read(cpu.program_counter)
-		addr := uint16(pos) + uint16(cpu.register_x)
-		return addr
-	case ZeroPage_Y:
-		pos := cpu.mem_read(cpu.program_counter)
-		addr := uint16(pos) + uint16(cpu.register_y)
-		return addr
-	case Absolute_X:
-		base := cpu.mem_read_u16(cpu.program_counter)
-		addr := base + uint16(cpu.register_x)
-		return addr
-	case Absolute_Y:
-		base := cpu.mem_read_u16(cpu.program_counter)
-		addr := base + uint16(cpu.register_y)
-		return addr
-	case Indirect_X:
-		base := cpu.mem_read(cpu.program_counter)
-		ptr := base + cpu.register_x
-		return cpu.mem_read_u16(uint16(ptr))
-	case Indirect_Y:
-		base := cpu.mem_read(cpu.program_counter)
-		deref_base := cpu.mem_read_u16(uint16(base))
-		return deref_base + uint16(cpu.register_y)
-	default:
-		panic(fmt.Errorf("mode %#v is not supported", mode))
-	}
-}
-
-func (cpu *CPU) lda(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
-	value := cpu.mem_read(addr)
-
-	cpu.register_a = value
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
-}
-
-func (cpu *CPU) tax() {
-	cpu.register_x = cpu.register_a
-	cpu.updateZeroAndNegativeFlags(cpu.register_x)
-}
-
-func (cpu *CPU) inx() {
-	cpu.register_x += 1
-	cpu.updateZeroAndNegativeFlags(cpu.register_x)
-}
-
-func (cpu *CPU) sta(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
-	cpu.mem_write(addr, cpu.register_a)
-}
-func (cpu *CPU) updateZeroAndNegativeFlags(result uint8) {
-	if result == 0 {
-		cpu.status = cpu.status | 0b0000_0010
-	} else {
-		cpu.status = cpu.status & 0b1111_1101
-	}
-
-	if result&0b1000_0000 != 0 {
-		cpu.status = cpu.status | 0b1000_0000
-	} else {
-		cpu.status = cpu.status & 0b0111_1111
 	}
 }
