@@ -1,5 +1,15 @@
 package cpu
 
+const (
+	CarryFlag            uint8 = 0b0000_0001
+	ZeroFlag             uint8 = 0b0000_0010
+	InterruptDisableFlag uint8 = 0b0000_0100
+	DecimalModeFlag      uint8 = 0b0000_1000
+	BreakCommandFlag     uint8 = 0b0001_0000
+	OverflowFlag         uint8 = 0b0100_0000
+	NegativeFlag         uint8 = 0b1000_0000
+)
+
 type CPU struct {
 	register_a      uint8
 	register_x      uint8

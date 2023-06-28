@@ -168,14 +168,14 @@ func (cpu *CPU) asl(mode AddressingMode) {
 
 	if mode == NoneAddressing {
 		val = cpu.register_a
-		cpu.setCarryFlag(val&0b1000_0000 != 0)
+		cpu.setCarryFlag(val>>7 == 1)
 
 		val = val << 1
 		cpu.register_a = val
 	} else {
 		addr := cpu.getOperandAddress(mode)
 		val = cpu.mem_read(addr)
-		cpu.setCarryFlag(val&0b1000_0000 != 0)
+		cpu.setCarryFlag(val>>7 == 1)
 
 		val = val << 1
 		cpu.mem_write(addr, val)
