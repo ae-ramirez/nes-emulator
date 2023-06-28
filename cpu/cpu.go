@@ -74,6 +74,8 @@ func (cpu *CPU) run() {
 			cpu.and(opcode.mode)
 		case 0x0a, 0x06, 0x16, 0x0e, 0x1e:
 			cpu.asl(opcode.mode)
+		case 0x24, 0x2c:
+			cpu.bit(opcode.mode)
 		case 0xa9, 0xa5, 0xb5, 0xad, 0xbd, 0xb9, 0xa1, 0xb1:
 			cpu.lda(opcode.mode)
 		case 0x85, 0x95, 0x8d, 0x9d, 0x99, 0x81, 0x91:
@@ -82,10 +84,18 @@ func (cpu *CPU) run() {
 			cpu.tax()
 		case 0xe8:
 			cpu.inx()
+		case 0x18:
+			cpu.clc()
+		case 0xd8:
+			cpu.cld()
+		case 0x58:
+			cpu.cli()
+		case 0xb8:
+			cpu.clv()
 		case 0x00:
 			return
 		default:
-			return
+			panic("Unsupported opcode")
 		}
 
 		cpu.program_counter += uint16(opcode.len) - 1

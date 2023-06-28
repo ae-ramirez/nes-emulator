@@ -1,16 +1,27 @@
 package cpu
 
-import "testing"
+import (
+	"testing"
+)
 
 const (
-	expectedSetZeroFlag       = "Expected zero flag to be set"
-	expectedUnsetZeroFlag     = "Expected zero flag to be unset"
-	expectedSetNegativeFlag   = "Expected negative flag to be set"
-	expectedUnsetNegativeFlag = "Expected negative flag to be unset"
-	expectedSetCarryFlag      = "Expected carry flag to be set"
-	expectedUnsetCarryFlag    = "Expected carry flag to be unset"
-	UnexpectedValInRegister   = "Expected %#02x in register %v, got: %#02x"
-	UnexpectedValInAddr       = "Expected %#02x in [addr], got: %#02x"
+	expectedSetCarryFlag              = "Expected carry flag to be set"
+	expectedUnsetCarryFlag            = "Expected carry flag to be unset"
+	expectedSetZeroFlag               = "Expected zero flag to be set"
+	expectedUnsetZeroFlag             = "Expected zero flag to be unset"
+	expectedSetInterruptDisableFlag   = "Expected interrupt disable flag to be set"
+	expectedUnsetInterruptDisableFlag = "Expected interrupt disable flag to be unset"
+	expectedSetDecimalModeFlag        = "Expected decimal mode flag to be set"
+	expectedUnsetDecimalModeFlag      = "Expected decimal mode flag to be unset"
+	expectedSetBreakCommandFlag       = "Expected break command flag to be set"
+	expectedUnsetBreakCommandFlag     = "Expected break command flag to be unset"
+	expectedSetOverflowFlag           = "Expected overflow flag to be set"
+	expectedUnsetOverflowFlag         = "Expected overflow flag to be unset"
+	expectedSetNegativeFlag           = "Expected negative flag to be set"
+	expectedUnsetNegativeFlag         = "Expected negative flag to be unset"
+
+	UnexpectedValInRegister = "Expected %#02x in register %v, got: %#02x"
+	UnexpectedValInAddr     = "Expected %#02x in [addr], got: %#02x"
 )
 
 func Test0xa9LDAImmediateLoadData(t *testing.T) {
@@ -113,12 +124,12 @@ func Test0x29ANDZeroPage(t *testing.T) {
 
 func TestSetCarryFlag(t *testing.T) {
 	cpu := &CPU{}
-	cpu.setCarryFlag(true)
+	cpu.setStatusFlag(CarryFlag, true)
 	if cpu.status&CarryFlag == 0 {
 		t.Error(expectedSetCarryFlag)
 	}
 
-	cpu.setCarryFlag(false)
+	cpu.setStatusFlag(CarryFlag, false)
 	if cpu.status&CarryFlag != 0 {
 		t.Error(expectedUnsetCarryFlag)
 	}
@@ -166,5 +177,71 @@ func Test0x0eASLFromMemory(t *testing.T) {
 	}
 	if cpu.status&CarryFlag != 0 {
 		t.Error(expectedUnsetCarryFlag)
+	}
+}
+
+func Test0x24BITZeroPage(t *testing.T) {
+	cpu := &CPU{}
+	val := uint8(0xff)
+	addr := uint8(0x00)
+	cpu.mem_write(uint16(addr), val)
+	cpu.load_and_run([]uint8{0xa9, 0x00, 0x24, addr, 0x00})
+
+	if cpu.status&NegativeFlag == 0 {
+		t.Error(expectedSetNegativeFlag)
+	}
+	if cpu.status&OverflowFlag == 0 {
+		t.Error(expectedSetOverflowFlag)
+	}
+	if cpu.status&ZeroFlag == 0 {
+		t.Error(expectedSetZeroFlag)
+	}
+}
+
+func Test0x18CLC(t *testing.T) {
+	cpu := &CPU{}
+	cpu.load([]uint8{0x18, 0x00})
+	cpu.reset()
+	cpu.setStatusFlag(CarryFlag, true)
+	cpu.run()
+
+	if cpu.status&CarryFlag != 0 {
+		t.Error(expectedUnsetCarryFlag)
+	}
+}
+
+func Test0xd8CLD(t *testing.T) {
+	cpu := &CPU{}
+	cpu.load([]uint8{0xd8, 0x00})
+	cpu.reset()
+	cpu.setStatusFlag(DecimalModeFlag, true)
+	cpu.run()
+
+	if cpu.status&DecimalModeFlag != 0 {
+		t.Error(expectedUnsetDecimalModeFlag)
+	}
+}
+
+func Test0x58CLI(t *testing.T) {
+	cpu := &CPU{}
+	cpu.load([]uint8{0x58, 0x00})
+	cpu.reset()
+	cpu.setStatusFlag(InterruptDisableFlag, true)
+	cpu.run()
+
+	if cpu.status&InterruptDisableFlag != 0 {
+		t.Error(expectedUnsetInterruptDisableFlag)
+	}
+}
+
+func Test0xb8CLV(t *testing.T) {
+	cpu := &CPU{}
+	cpu.load([]uint8{0xb8, 0x00})
+	cpu.reset()
+	cpu.setStatusFlag(OverflowFlag, true)
+	cpu.run()
+
+	if cpu.status&OverflowFlag != 0 {
+		t.Error(expectedUnsetOverflowFlag)
 	}
 }

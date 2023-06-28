@@ -1,6 +1,8 @@
 package cpu
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type AddressingMode int
 
@@ -57,6 +59,14 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x16, "ASL", 2, 6, ZeroPage_X),
 		newOpCode(0x0e, "ASL", 3, 6, Absolute),
 		newOpCode(0x1e, "ASL", 3, 7, Absolute_X),
+
+		newOpCode(0x24, "BIT", 2, 3, ZeroPage),
+		newOpCode(0x2c, "BIT", 3, 4, Absolute),
+
+		newOpCode(0x18, "CLC", 1, 2, NoneAddressing),
+		newOpCode(0xd8, "CLD", 1, 2, NoneAddressing),
+		newOpCode(0x58, "CLI", 1, 2, NoneAddressing),
+		newOpCode(0xb8, "CLV", 1, 2, NoneAddressing),
 
 		newOpCode(0xa9, "LDA", 2, 2, Immediate),
 		newOpCode(0xa5, "LDA", 2, 3, ZeroPage),
@@ -129,24 +139,15 @@ func (cpu *CPU) getOperandAddress(mode AddressingMode) uint16 {
 }
 
 func (cpu *CPU) updateZeroAndNegativeFlags(result uint8) {
-	if result == 0 {
-		cpu.status = cpu.status | 0b0000_0010
-	} else {
-		cpu.status = cpu.status & 0b1111_1101
-	}
-
-	if result&0b1000_0000 != 0 {
-		cpu.status = cpu.status | 0b1000_0000
-	} else {
-		cpu.status = cpu.status & 0b0111_1111
-	}
+	cpu.setStatusFlag(ZeroFlag, result == 0)
+	cpu.setStatusFlag(NegativeFlag, result>>7 == 1)
 }
 
-func (cpu *CPU) setCarryFlag(val bool) {
-	if val == true {
-		cpu.status = cpu.status | 0b0000_0001
+func (cpu *CPU) setStatusFlag(mask uint8, set bool) {
+	if set {
+		cpu.status |= mask
 	} else {
-		cpu.status = cpu.status & 0b1111_1110
+		cpu.status &= ^mask
 	}
 }
 
@@ -168,20 +169,45 @@ func (cpu *CPU) asl(mode AddressingMode) {
 
 	if mode == NoneAddressing {
 		val = cpu.register_a
-		cpu.setCarryFlag(val>>7 == 1)
+		cpu.setStatusFlag(CarryFlag, val>>7 == 1)
 
 		val = val << 1
 		cpu.register_a = val
 	} else {
 		addr := cpu.getOperandAddress(mode)
 		val = cpu.mem_read(addr)
-		cpu.setCarryFlag(val>>7 == 1)
+		cpu.setStatusFlag(CarryFlag, val>>7 == 1)
 
 		val = val << 1
 		cpu.mem_write(addr, val)
 	}
 
 	cpu.updateZeroAndNegativeFlags(val)
+}
+
+func (cpu *CPU) bit(mode AddressingMode) {
+	addr := cpu.getOperandAddress(mode)
+	val := cpu.mem_read(addr)
+
+	cpu.setStatusFlag(NegativeFlag, val&0b1000_0000 != 0)
+	cpu.setStatusFlag(OverflowFlag, val&0b0100_0000 != 0)
+	cpu.setStatusFlag(ZeroFlag, val&cpu.register_a == 0)
+}
+
+func (cpu *CPU) clc() {
+	cpu.setStatusFlag(CarryFlag, false)
+}
+
+func (cpu *CPU) cld() {
+	cpu.setStatusFlag(DecimalModeFlag, false)
+}
+
+func (cpu *CPU) cli() {
+	cpu.setStatusFlag(InterruptDisableFlag, false)
+}
+
+func (cpu *CPU) clv() {
+	cpu.setStatusFlag(OverflowFlag, false)
 }
 
 func (cpu *CPU) lda(mode AddressingMode) {
