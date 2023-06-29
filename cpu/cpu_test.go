@@ -245,3 +245,146 @@ func Test0xb8CLV(t *testing.T) {
 		t.Error(expectedUnsetOverflowFlag)
 	}
 }
+
+func Test0xc9CMPEqualValues(t *testing.T) {
+	cpu := &CPU{}
+	val := uint8(26)
+	cpu.load([]uint8{0xc9, val, 0x00})
+	cpu.reset()
+	cpu.register_a = val
+	cpu.run()
+
+	if cpu.status&ZeroFlag == 0 {
+		t.Error(expectedSetZeroFlag)
+	}
+	if cpu.status&NegativeFlag != 0 {
+		t.Error(expectedUnsetNegativeFlag)
+	}
+	if cpu.status&CarryFlag == 0 {
+		t.Error(expectedSetCarryFlag)
+	}
+}
+
+func Test0xc9CMPGreaterToLessThan(t *testing.T) {
+	cpu := &CPU{}
+	val := uint8(26)
+	cpu.load([]uint8{0xc9, val, 0x00})
+	cpu.reset()
+	cpu.register_a = 48
+	cpu.run()
+
+	if cpu.status&ZeroFlag != 0 {
+		t.Error(expectedUnsetZeroFlag)
+	}
+	if cpu.status&NegativeFlag != 0 {
+		t.Error(expectedUnsetNegativeFlag)
+	}
+	if cpu.status&CarryFlag == 0 {
+		t.Error(expectedSetCarryFlag)
+	}
+}
+
+func Test0xc9CMPLessThanToGreater(t *testing.T) {
+	cpu := &CPU{}
+	val := uint8(26)
+	cpu.load([]uint8{0xc9, val, 0x00})
+	cpu.reset()
+	cpu.register_a = 8
+	cpu.run()
+
+	if cpu.status&ZeroFlag != 0 {
+		t.Error(expectedUnsetZeroFlag)
+	}
+	if cpu.status&NegativeFlag == 0 {
+		t.Error(expectedSetNegativeFlag)
+	}
+	if cpu.status&CarryFlag != 0 {
+		t.Error(expectedUnsetCarryFlag)
+	}
+}
+
+func Test0xc6DECOverflow(t *testing.T) {
+	cpu := &CPU{}
+	addr := uint8(0x0f)
+	val := uint8(0)
+	want := uint8(255)
+	cpu.mem_write(uint16(addr), val)
+	cpu.load([]uint8{0xc6, addr, 0x00})
+	cpu.reset()
+	cpu.run()
+
+	got := cpu.mem_read(uint16(addr))
+	if got != want {
+		t.Errorf(UnexpectedValInAddr, want, got)
+	}
+	if cpu.status&NegativeFlag == 0 {
+		t.Error(expectedSetNegativeFlag)
+	}
+}
+
+func Test0xcaDEXDecrementToZero(t *testing.T) {
+	cpu := &CPU{}
+	cpu.load([]uint8{0xca, 0x00})
+	cpu.reset()
+	cpu.register_x = 0x01
+	cpu.run()
+
+	got := cpu.register_x
+	want := uint8(0)
+
+	if got != want {
+		t.Errorf(UnexpectedValInRegister, want, "x", got)
+	}
+}
+
+func Test0x88DEYDecrementToNegative(t *testing.T) {
+	cpu := &CPU{}
+	cpu.load([]uint8{0x88, 0x00})
+	cpu.reset()
+	cpu.register_y = 0xff
+	cpu.run()
+
+	got := cpu.register_y
+	want := uint8(0xfe)
+
+	if got != want {
+		t.Errorf(UnexpectedValInRegister, want, "y", got)
+	}
+	if cpu.status&NegativeFlag == 0 {
+		t.Error(expectedSetNegativeFlag)
+	}
+}
+
+func Test0x49EORImmediateValue(t *testing.T) {
+	cpu := &CPU{}
+	val := uint8(0b1111_0000)
+	cpu.load([]uint8{0x49, val, 0x00})
+	cpu.reset()
+	cpu.register_a = 0b0000_1111
+	cpu.run()
+
+	got := cpu.register_a
+	want := uint8(0b1111_1111)
+
+	if got != want {
+		t.Errorf(UnexpectedValInRegister, want, "a", got)
+	}
+}
+
+func Test0xe6INCIncrementFromMemory(t *testing.T) {
+	cpu := &CPU{}
+	addr := uint8(0x0f)
+	val := uint8(0xfe)
+	cpu.mem_write(uint16(addr), val)
+	cpu.load_and_run([]uint8{0xe6, addr, 0x00})
+
+	got := cpu.mem_read(uint16(addr))
+	want := uint8(0xff)
+
+	if got != want {
+		t.Errorf(UnexpectedValInAddr, want, got)
+	}
+	if cpu.status&NegativeFlag == 0 {
+		t.Error(expectedSetNegativeFlag)
+	}
+}
