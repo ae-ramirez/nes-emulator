@@ -131,6 +131,8 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x4c, "JMP", 3, 3, Absolute),
 		newOpCode(0x6c, "JMP", 3, 5, Absolute),
 
+		newOpCode(0x20, "JSR", 3, 6, Absolute),
+
 		newOpCode(0xa9, "LDA", 2, 2, Immediate),
 		newOpCode(0xa5, "LDA", 2, 3, ZeroPage),
 		newOpCode(0xb5, "LDA", 2, 4, ZeroPage_X),
@@ -167,6 +169,14 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x01, "ORA", 2, 6, Indirect_X),
 		newOpCode(0x11, "ORA", 2, 5 /* +1 if page crossed */, Indirect_Y),
 
+		newOpCode(0x48, "PHA", 1, 3, NoneAddressing),
+
+		newOpCode(0x08, "PHP", 1, 3, NoneAddressing),
+
+		newOpCode(0x68, "PLA", 1, 4, NoneAddressing),
+
+		newOpCode(0x28, "PLP", 1, 4, NoneAddressing),
+
 		newOpCode(0x2a, "ROL", 1, 2, NoneAddressing),
 		newOpCode(0x26, "ROL", 2, 5, ZeroPage),
 		newOpCode(0x36, "ROL", 2, 6, ZeroPage_X),
@@ -178,6 +188,10 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x76, "ROR", 2, 6, ZeroPage_X),
 		newOpCode(0x6e, "ROR", 3, 6, Absolute),
 		newOpCode(0x7e, "ROR", 3, 7, Absolute_X),
+
+		newOpCode(0x40, "RTI", 1, 6, NoneAddressing),
+
+		newOpCode(0x60, "RTS", 1, 6, NoneAddressing),
 
 		newOpCode(0xe9, "SBC", 2, 2, Immediate),
 		newOpCode(0xe5, "SBC", 2, 3, ZeroPage),
@@ -212,7 +226,11 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 
 		newOpCode(0xa8, "TAY", 1, 2, NoneAddressing),
 
+		newOpCode(0xba, "TSX", 1, 2, NoneAddressing),
+
 		newOpCode(0x8a, "TXA", 1, 2, NoneAddressing),
+
+		newOpCode(0x9a, "TXS", 1, 2, NoneAddressing),
 
 		newOpCode(0x98, "TYA", 1, 2, NoneAddressing),
 	}
@@ -355,8 +373,13 @@ func (cpu *CPU) branch(shouldBranch bool) {
 }
 
 func (cpu *CPU) brk() {
-	// TODO
+	cpu.stack_push_u16(cpu.program_counter)
+	cpu.stack_push(cpu.status)
+
+	cpu.program_counter = cpu.mem_read_u16(0xfffe)
+	cpu.setStatusFlag(BreakCommandFlag, true)
 }
+
 func (cpu *CPU) clc() {
 	cpu.setStatusFlag(CarryFlag, false)
 }
@@ -465,6 +488,12 @@ func (cpu *CPU) jmp_indirect() {
 	cpu.program_counter = jump_addr
 }
 
+func (cpu *CPU) jsr(mode AddressingMode) {
+	addr := cpu.mem_read_u16(cpu.program_counter)
+	cpu.stack_push_u16(cpu.program_counter + 2 - 1)
+	cpu.program_counter = addr
+}
+
 func (cpu *CPU) lda(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
 	cpu.register_a = cpu.mem_read(addr)
@@ -510,6 +539,23 @@ func (cpu *CPU) ora(mode AddressingMode) {
 	cpu.updateZeroAndNegativeFlags(cpu.register_a)
 }
 
+func (cpu *CPU) pha() {
+	cpu.stack_push(cpu.register_a)
+}
+
+func (cpu *CPU) php() {
+	cpu.stack_push(cpu.status)
+}
+
+func (cpu *CPU) pla() {
+	cpu.register_a = cpu.stack_pop()
+	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+}
+
+func (cpu *CPU) plp() {
+	cpu.status = cpu.stack_pop()
+}
+
 func (cpu *CPU) rol(mode AddressingMode) {
 	var val uint8
 	var setCarryFlag bool
@@ -552,6 +598,15 @@ func (cpu *CPU) ror(mode AddressingMode) {
 
 	cpu.setStatusFlag(CarryFlag, setCarryFlag)
 	cpu.updateZeroAndNegativeFlags(val)
+}
+
+func (cpu *CPU) rti() {
+	cpu.status = cpu.stack_pop()
+	cpu.program_counter = cpu.stack_pop_u16()
+}
+
+func (cpu *CPU) rts() {
+	cpu.program_counter = cpu.stack_pop_u16() + 1
 }
 
 func (cpu *CPU) sbc(mode AddressingMode) {
@@ -611,9 +666,18 @@ func (cpu *CPU) tay() {
 	cpu.updateZeroAndNegativeFlags(cpu.register_y)
 }
 
+func (cpu *CPU) tsx() {
+	cpu.register_x = cpu.stack_pointer
+	cpu.updateZeroAndNegativeFlags(cpu.register_x)
+}
+
 func (cpu *CPU) txa() {
 	cpu.register_a = cpu.register_x
 	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+}
+
+func (cpu *CPU) txs() {
+	cpu.stack_pointer = cpu.register_x
 }
 
 func (cpu *CPU) tya() {

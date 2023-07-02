@@ -18,9 +18,12 @@ type CPU struct {
 	register_y      uint8
 	status          uint8
 	program_counter uint16
+	stack_pointer   uint8
 	opcodes         func() map[uint8]*OpCode
-	memory          [0xFFFF]uint8
+	memory         [0xFFFF + 1]uint8
 }
+
+var stack_base_position uint16 = 0x0100
 
 func (cpu *CPU) mem_read(addr uint16) uint8 {
 	return cpu.memory[addr]
@@ -43,10 +46,37 @@ func (cpu *CPU) mem_write_u16(pos uint16, data uint16) {
 	cpu.mem_write(pos+1, uint8(hi))
 }
 
+func (cpu *CPU) stack_push(data uint8) {
+	addr := stack_base_position + uint16(cpu.stack_pointer)
+	cpu.mem_write(addr, data)
+	cpu.stack_pointer -= 1
+}
+
+func (cpu *CPU) stack_push_u16(data uint16) {
+	hi := data >> 8
+	lo := data & 0xff
+	cpu.stack_push(uint8(hi))
+	cpu.stack_push(uint8(lo))
+}
+
+func (cpu *CPU) stack_pop() uint8 {
+	cpu.stack_pointer += 1
+	addr := 0x0100 + uint16(cpu.stack_pointer)
+	data := cpu.mem_read(addr)
+	return data
+}
+
+func (cpu *CPU) stack_pop_u16() uint16 {
+	lo := uint16(cpu.stack_pop())
+	hi := uint16(cpu.stack_pop())
+	return (hi << 8) | lo
+}
+
 func (cpu *CPU) reset() {
 	cpu.register_a = 0
 	cpu.register_x = 0
-	cpu.status = 0
+	cpu.status = 0b100100
+	cpu.stack_pointer = 0xff
 	cpu.opcodes = OpCodes
 
 	cpu.program_counter = cpu.mem_read_u16(0xFFFC)
@@ -138,6 +168,8 @@ func (cpu *CPU) run() {
 			cpu.jmp_absolute()
 		case 0x6c:
 			cpu.jmp_indirect()
+		case 0x20:
+			cpu.jsr(opcode.mode)
 		case 0xa9, 0xa5, 0xb5, 0xad, 0xbd, 0xb9, 0xa1, 0xb1:
 			cpu.lda(opcode.mode)
 		case 0xa2, 0xa6, 0xb6, 0xae, 0xbe:
@@ -151,10 +183,22 @@ func (cpu *CPU) run() {
 			break
 		case 0x09, 0x05, 0x15, 0x0d, 0x1d, 0x19, 0x01, 0x11:
 			cpu.ora(opcode.mode)
+		case 0x48:
+			cpu.pha()
+		case 0x08:
+			cpu.php()
+		case 0x68:
+			cpu.pla()
+		case 0x28:
+			cpu.plp()
 		case 0x2a, 0x26, 0x36, 0x2e, 0x3e:
 			cpu.rol(opcode.mode)
 		case 0x6a, 0x66, 0x76, 0x6e, 0x7e:
 			cpu.ror(opcode.mode)
+		case 0x40:
+			cpu.rti()
+		case 0x60:
+			cpu.rts()
 		case 0xe9, 0xe5, 0xf5, 0xed, 0xfd, 0xf9, 0xe1, 0xf1:
 			cpu.sbc(opcode.mode)
 		case 0x38:
@@ -173,8 +217,12 @@ func (cpu *CPU) run() {
 			cpu.tax()
 		case 0xa8:
 			cpu.tay()
+		case 0xba:
+			cpu.tsx()
 		case 0x8a:
 			cpu.txa()
+		case 0x9a:
+			cpu.txs()
 		case 0x98:
 			cpu.tya()
 		case 0x00:
