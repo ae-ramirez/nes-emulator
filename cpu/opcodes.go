@@ -253,35 +253,35 @@ var OpCodes = OpCodesMapFunc()
 func (cpu *CPU) getOperandAddress(mode AddressingMode) uint16 {
 	switch mode {
 	case Immediate:
-		return cpu.program_counter
+		return cpu.programCounter
 	case ZeroPage:
-		return uint16(cpu.mem_read(cpu.program_counter))
+		return uint16(cpu.MemRead(cpu.programCounter))
 	case Absolute:
-		return cpu.mem_read_u16(cpu.program_counter)
+		return cpu.MemRead_u16(cpu.programCounter)
 	case ZeroPage_X:
-		pos := cpu.mem_read(cpu.program_counter)
-		addr := uint16(pos) + uint16(cpu.register_x)
+		pos := cpu.MemRead(cpu.programCounter)
+		addr := uint16(pos) + uint16(cpu.registerX)
 		return addr
 	case ZeroPage_Y:
-		pos := cpu.mem_read(cpu.program_counter)
-		addr := uint16(pos) + uint16(cpu.register_y)
+		pos := cpu.MemRead(cpu.programCounter)
+		addr := uint16(pos) + uint16(cpu.registerY)
 		return addr
 	case Absolute_X:
-		base := cpu.mem_read_u16(cpu.program_counter)
-		addr := base + uint16(cpu.register_x)
+		base := cpu.MemRead_u16(cpu.programCounter)
+		addr := base + uint16(cpu.registerX)
 		return addr
 	case Absolute_Y:
-		base := cpu.mem_read_u16(cpu.program_counter)
-		addr := base + uint16(cpu.register_y)
+		base := cpu.MemRead_u16(cpu.programCounter)
+		addr := base + uint16(cpu.registerY)
 		return addr
 	case Indirect_X:
-		base := cpu.mem_read(cpu.program_counter)
-		ptr := base + cpu.register_x
-		return cpu.mem_read_u16(uint16(ptr))
+		base := cpu.MemRead(cpu.programCounter)
+		ptr := base + cpu.registerX
+		return cpu.MemRead_u16(uint16(ptr))
 	case Indirect_Y:
-		base := cpu.mem_read(cpu.program_counter)
-		deref_base := cpu.mem_read_u16(uint16(base))
-		return deref_base + uint16(cpu.register_y)
+		base := cpu.MemRead(cpu.programCounter)
+		deref_base := cpu.MemRead_u16(uint16(base))
+		return deref_base + uint16(cpu.registerY)
 	default:
 		panic(fmt.Errorf("mode %#v is not supported", mode))
 	}
@@ -310,47 +310,47 @@ func (cpu *CPU) isStatusFlagClear(mask uint8) bool {
 
 func (cpu *CPU) adc(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
+	val := cpu.MemRead(addr)
 
-	sum := uint16(cpu.register_a) + uint16(val)
+	sum := uint16(cpu.registerA) + uint16(val)
 	if cpu.status&CarryFlag != 0 {
 		sum += 1
 	}
 	result := uint8(sum)
 
-	setOverflowFlag := (cpu.register_a^result)&(val^result)&0x80 != 0
+	setOverflowFlag := (cpu.registerA^result)&(val^result)&0x80 != 0
 
 	cpu.setStatusFlag(CarryFlag, sum > 0xff)
 	cpu.setStatusFlag(OverflowFlag, setOverflowFlag)
 
-	cpu.register_a = result
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.registerA = result
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) and(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
+	val := cpu.MemRead(addr)
 
-	cpu.register_a = cpu.register_a & val
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.registerA = cpu.registerA & val
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) asl(mode AddressingMode) {
 	var val uint8
 
 	if mode == NoneAddressing {
-		val = cpu.register_a
+		val = cpu.registerA
 		cpu.setStatusFlag(CarryFlag, val>>7 == 1)
 
 		val = val << 1
-		cpu.register_a = val
+		cpu.registerA = val
 	} else {
 		addr := cpu.getOperandAddress(mode)
-		val = cpu.mem_read(addr)
+		val = cpu.MemRead(addr)
 		cpu.setStatusFlag(CarryFlag, val>>7 == 1)
 
 		val = val << 1
-		cpu.mem_write(addr, val)
+		cpu.MemWrite(addr, val)
 	}
 
 	cpu.updateZeroAndNegativeFlags(val)
@@ -358,25 +358,25 @@ func (cpu *CPU) asl(mode AddressingMode) {
 
 func (cpu *CPU) bit(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
+	val := cpu.MemRead(addr)
 
 	cpu.setStatusFlag(NegativeFlag, val&0b1000_0000 != 0)
 	cpu.setStatusFlag(OverflowFlag, val&0b0100_0000 != 0)
-	cpu.setStatusFlag(ZeroFlag, val&cpu.register_a == 0)
+	cpu.setStatusFlag(ZeroFlag, val&cpu.registerA == 0)
 }
 
 func (cpu *CPU) branch(shouldBranch bool) {
 	if shouldBranch {
-		displacement := int8(cpu.mem_read(cpu.program_counter))
-		cpu.program_counter += uint16(displacement)
+		displacement := int8(cpu.MemRead(cpu.programCounter))
+		cpu.programCounter += uint16(displacement)
 	}
 }
 
 func (cpu *CPU) brk() {
-	cpu.stack_push_u16(cpu.program_counter)
-	cpu.stack_push(cpu.status)
+	cpu.stackPush_u16(cpu.programCounter)
+	cpu.stackPush(cpu.status)
 
-	cpu.program_counter = cpu.mem_read_u16(0xfffe)
+	cpu.programCounter = cpu.MemRead_u16(0xfffe)
 	cpu.setStatusFlag(BreakCommandFlag, true)
 }
 
@@ -398,134 +398,134 @@ func (cpu *CPU) clv() {
 
 func (cpu *CPU) cmp(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
+	val := cpu.MemRead(addr)
 
-	cpu.setStatusFlag(CarryFlag, cpu.register_a >= val)
-	cpu.setStatusFlag(ZeroFlag, cpu.register_a == val)
-	cpu.setStatusFlag(NegativeFlag, (cpu.register_a-val)>>7 == 1)
+	cpu.setStatusFlag(CarryFlag, cpu.registerA >= val)
+	cpu.setStatusFlag(ZeroFlag, cpu.registerA == val)
+	cpu.setStatusFlag(NegativeFlag, (cpu.registerA-val)>>7 == 1)
 }
 
 func (cpu *CPU) cpx(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
+	val := cpu.MemRead(addr)
 
-	cpu.setStatusFlag(CarryFlag, cpu.register_x >= val)
-	cpu.setStatusFlag(ZeroFlag, cpu.register_x == val)
-	cpu.setStatusFlag(NegativeFlag, (cpu.register_x-val)>>7 == 1)
+	cpu.setStatusFlag(CarryFlag, cpu.registerX >= val)
+	cpu.setStatusFlag(ZeroFlag, cpu.registerX == val)
+	cpu.setStatusFlag(NegativeFlag, (cpu.registerX-val)>>7 == 1)
 }
 
 func (cpu *CPU) cpy(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
+	val := cpu.MemRead(addr)
 
-	cpu.setStatusFlag(CarryFlag, cpu.register_y >= val)
-	cpu.setStatusFlag(ZeroFlag, cpu.register_y == val)
-	cpu.setStatusFlag(NegativeFlag, (cpu.register_y-val)>>7 == 1)
+	cpu.setStatusFlag(CarryFlag, cpu.registerY >= val)
+	cpu.setStatusFlag(ZeroFlag, cpu.registerY == val)
+	cpu.setStatusFlag(NegativeFlag, (cpu.registerY-val)>>7 == 1)
 }
 
 func (cpu *CPU) dec(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr) - 1
-	cpu.mem_write(addr, val)
+	val := cpu.MemRead(addr) - 1
+	cpu.MemWrite(addr, val)
 
 	cpu.updateZeroAndNegativeFlags(val)
 }
 
 func (cpu *CPU) dex() {
-	cpu.register_x -= 1
-	cpu.updateZeroAndNegativeFlags(cpu.register_x)
+	cpu.registerX -= 1
+	cpu.updateZeroAndNegativeFlags(cpu.registerX)
 }
 
 func (cpu *CPU) dey() {
-	cpu.register_y -= 1
-	cpu.updateZeroAndNegativeFlags(cpu.register_y)
+	cpu.registerY -= 1
+	cpu.updateZeroAndNegativeFlags(cpu.registerY)
 }
 
 func (cpu *CPU) eor(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
-	cpu.register_a ^= val
+	val := cpu.MemRead(addr)
+	cpu.registerA ^= val
 
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) inc(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr) + 1
-	cpu.mem_write(addr, val)
+	val := cpu.MemRead(addr) + 1
+	cpu.MemWrite(addr, val)
 
 	cpu.updateZeroAndNegativeFlags(val)
 }
 
 func (cpu *CPU) inx() {
-	cpu.register_x += 1
-	cpu.updateZeroAndNegativeFlags(cpu.register_x)
+	cpu.registerX += 1
+	cpu.updateZeroAndNegativeFlags(cpu.registerX)
 }
 
 func (cpu *CPU) iny() {
-	cpu.register_y += 1
-	cpu.updateZeroAndNegativeFlags(cpu.register_y)
+	cpu.registerY += 1
+	cpu.updateZeroAndNegativeFlags(cpu.registerY)
 }
 
 func (cpu *CPU) jmp_absolute() {
-	addr := cpu.mem_read_u16(cpu.program_counter)
-	cpu.program_counter = addr
+	addr := cpu.MemRead_u16(cpu.programCounter)
+	cpu.programCounter = addr
 }
 
 func (cpu *CPU) jmp_indirect() {
 	var jump_addr uint16
-	addr := cpu.mem_read_u16(cpu.program_counter)
+	addr := cpu.MemRead_u16(cpu.programCounter)
 
 	if addr&0xff == 0xff {
 		// accounting for 6502 bug
-		lo := uint16(cpu.mem_read(addr))
-		hi := uint16(cpu.mem_read(addr & 0xff00))
+		lo := uint16(cpu.MemRead(addr))
+		hi := uint16(cpu.MemRead(addr & 0xff00))
 		jump_addr = (hi << 8) | lo
 	} else {
-		jump_addr = cpu.mem_read_u16(addr)
+		jump_addr = cpu.MemRead_u16(addr)
 	}
 
-	cpu.program_counter = jump_addr
+	cpu.programCounter = jump_addr
 }
 
 func (cpu *CPU) jsr(mode AddressingMode) {
-	addr := cpu.mem_read_u16(cpu.program_counter)
-	cpu.stack_push_u16(cpu.program_counter + 2 - 1)
-	cpu.program_counter = addr
+	addr := cpu.MemRead_u16(cpu.programCounter)
+	cpu.stackPush_u16(cpu.programCounter + 2 - 1)
+	cpu.programCounter = addr
 }
 
 func (cpu *CPU) lda(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.register_a = cpu.mem_read(addr)
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.registerA = cpu.MemRead(addr)
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) ldx(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.register_x = cpu.mem_read(addr)
-	cpu.updateZeroAndNegativeFlags(cpu.register_x)
+	cpu.registerX = cpu.MemRead(addr)
+	cpu.updateZeroAndNegativeFlags(cpu.registerX)
 }
 
 func (cpu *CPU) ldy(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.register_y = cpu.mem_read(addr)
-	cpu.updateZeroAndNegativeFlags(cpu.register_y)
+	cpu.registerY = cpu.MemRead(addr)
+	cpu.updateZeroAndNegativeFlags(cpu.registerY)
 }
 
 func (cpu *CPU) lsr(mode AddressingMode) {
 	var val uint8
 
 	if mode == NoneAddressing {
-		val = cpu.register_a
+		val = cpu.registerA
 		cpu.setStatusFlag(CarryFlag, val&0b0000_0001 != 0)
 		val >>= 1
-		cpu.register_a = val
+		cpu.registerA = val
 	} else {
 		addr := cpu.getOperandAddress(mode)
-		val = cpu.mem_read(addr)
+		val = cpu.MemRead(addr)
 		cpu.setStatusFlag(CarryFlag, val&0b0000_0001 != 0)
 		val >>= 1
-		cpu.mem_write(addr, val)
+		cpu.MemWrite(addr, val)
 	}
 
 	cpu.updateZeroAndNegativeFlags(val)
@@ -533,27 +533,27 @@ func (cpu *CPU) lsr(mode AddressingMode) {
 
 func (cpu *CPU) ora(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
-	cpu.register_a |= val
+	val := cpu.MemRead(addr)
+	cpu.registerA |= val
 
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) pha() {
-	cpu.stack_push(cpu.register_a)
+	cpu.stackPush(cpu.registerA)
 }
 
 func (cpu *CPU) php() {
-	cpu.stack_push(cpu.status)
+	cpu.stackPush(cpu.status)
 }
 
 func (cpu *CPU) pla() {
-	cpu.register_a = cpu.stack_pop()
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.registerA = cpu.stackPop()
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) plp() {
-	cpu.status = cpu.stack_pop()
+	cpu.status = cpu.stackPop()
 }
 
 func (cpu *CPU) rol(mode AddressingMode) {
@@ -561,17 +561,17 @@ func (cpu *CPU) rol(mode AddressingMode) {
 	var setCarryFlag bool
 
 	if mode == NoneAddressing {
-		setCarryFlag = cpu.register_a&0b1000_0000 != 0
-		cpu.register_a <<= 1
-		cpu.register_a |= cpu.status & CarryFlag
-		val = cpu.register_a
+		setCarryFlag = cpu.registerA&0b1000_0000 != 0
+		cpu.registerA <<= 1
+		cpu.registerA |= cpu.status & CarryFlag
+		val = cpu.registerA
 	} else {
 		addr := cpu.getOperandAddress(mode)
-		val := cpu.mem_read(addr)
+		val := cpu.MemRead(addr)
 		setCarryFlag = val&0b1000_0000 != 0
 		val <<= 1
 		val |= cpu.status & CarryFlag
-		cpu.mem_write(addr, val)
+		cpu.MemWrite(addr, val)
 	}
 
 	cpu.setStatusFlag(CarryFlag, setCarryFlag)
@@ -583,17 +583,17 @@ func (cpu *CPU) ror(mode AddressingMode) {
 	var setCarryFlag bool
 
 	if mode == NoneAddressing {
-		setCarryFlag = cpu.register_a&0b0000_0001 != 0
-		cpu.register_a >>= 1
-		cpu.register_a |= (cpu.status & CarryFlag) << 7
-		val = cpu.register_a
+		setCarryFlag = cpu.registerA&0b0000_0001 != 0
+		cpu.registerA >>= 1
+		cpu.registerA |= (cpu.status & CarryFlag) << 7
+		val = cpu.registerA
 	} else {
 		addr := cpu.getOperandAddress(mode)
-		val = cpu.mem_read(addr)
+		val = cpu.MemRead(addr)
 		setCarryFlag = val&0b0000_0001 != 0
 		val >>= 1
 		val |= (cpu.status & CarryFlag) << 7
-		cpu.mem_write(addr, val)
+		cpu.MemWrite(addr, val)
 	}
 
 	cpu.setStatusFlag(CarryFlag, setCarryFlag)
@@ -601,32 +601,32 @@ func (cpu *CPU) ror(mode AddressingMode) {
 }
 
 func (cpu *CPU) rti() {
-	cpu.status = cpu.stack_pop()
-	cpu.program_counter = cpu.stack_pop_u16()
+	cpu.status = cpu.stackPop()
+	cpu.programCounter = cpu.stackPop_u16()
 }
 
 func (cpu *CPU) rts() {
-	cpu.program_counter = cpu.stack_pop_u16() + 1
+	cpu.programCounter = cpu.stackPop_u16() + 1
 }
 
 func (cpu *CPU) sbc(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	val := cpu.mem_read(addr)
+	val := cpu.MemRead(addr)
 	val = ^val + 1
 
-	sub := uint16(cpu.register_a) + uint16(val) - 1
+	sub := uint16(cpu.registerA) + uint16(val) - 1
 	if cpu.status&CarryFlag != 0 {
 		sub += 1
 	}
 	result := uint8(sub)
 
-	setOverflowFlag := (cpu.register_a^result)&(val^result)&0x80 != 0
+	setOverflowFlag := (cpu.registerA^result)&(val^result)&0x80 != 0
 
 	cpu.setStatusFlag(CarryFlag, sub > 0xff)
 	cpu.setStatusFlag(OverflowFlag, setOverflowFlag)
 
-	cpu.register_a = result
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.registerA = result
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) sec() {
@@ -643,44 +643,44 @@ func (cpu *CPU) sei() {
 
 func (cpu *CPU) sta(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.mem_write(addr, cpu.register_a)
+	cpu.MemWrite(addr, cpu.registerA)
 }
 
 func (cpu *CPU) stx(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.mem_write(addr, cpu.register_x)
+	cpu.MemWrite(addr, cpu.registerX)
 }
 
 func (cpu *CPU) sty(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.mem_write(addr, cpu.register_y)
+	cpu.MemWrite(addr, cpu.registerY)
 }
 
 func (cpu *CPU) tax() {
-	cpu.register_x = cpu.register_a
-	cpu.updateZeroAndNegativeFlags(cpu.register_x)
+	cpu.registerX = cpu.registerA
+	cpu.updateZeroAndNegativeFlags(cpu.registerX)
 }
 
 func (cpu *CPU) tay() {
-	cpu.register_y = cpu.register_a
-	cpu.updateZeroAndNegativeFlags(cpu.register_y)
+	cpu.registerY = cpu.registerA
+	cpu.updateZeroAndNegativeFlags(cpu.registerY)
 }
 
 func (cpu *CPU) tsx() {
-	cpu.register_x = cpu.stack_pointer
-	cpu.updateZeroAndNegativeFlags(cpu.register_x)
+	cpu.registerX = cpu.stackPointer
+	cpu.updateZeroAndNegativeFlags(cpu.registerX)
 }
 
 func (cpu *CPU) txa() {
-	cpu.register_a = cpu.register_x
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.registerA = cpu.registerX
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) txs() {
-	cpu.stack_pointer = cpu.register_x
+	cpu.stackPointer = cpu.registerX
 }
 
 func (cpu *CPU) tya() {
-	cpu.register_a = cpu.register_y
-	cpu.updateZeroAndNegativeFlags(cpu.register_a)
+	cpu.registerA = cpu.registerY
+	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }

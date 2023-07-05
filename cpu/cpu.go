@@ -13,93 +13,93 @@ const (
 )
 
 type CPU struct {
-	register_a      uint8
-	register_x      uint8
-	register_y      uint8
-	status          uint8
-	program_counter uint16
-	stack_pointer   uint8
-	opcodes         func() map[uint8]*OpCode
+	registerA      uint8
+	registerX      uint8
+	registerY      uint8
+	status         uint8
+	programCounter uint16
+	stackPointer   uint8
+	opcodes        func() map[uint8]*OpCode
 	memory         [0xFFFF + 1]uint8
 }
 
-var stack_base_position uint16 = 0x0100
+const stackBasePosition uint16 = 0x0100
 
-func (cpu *CPU) mem_read(addr uint16) uint8 {
+func (cpu *CPU) MemRead(addr uint16) uint8 {
 	return cpu.memory[addr]
 }
 
-func (cpu *CPU) mem_read_u16(pos uint16) uint16 {
-	lo := uint16(cpu.mem_read(pos))
-	hi := uint16(cpu.mem_read(pos + 1))
+func (cpu *CPU) MemRead_u16(pos uint16) uint16 {
+	lo := uint16(cpu.MemRead(pos))
+	hi := uint16(cpu.MemRead(pos + 1))
 	return (hi << 8) | lo
 }
 
-func (cpu *CPU) mem_write(addr uint16, data uint8) {
+func (cpu *CPU) MemWrite(addr uint16, data uint8) {
 	cpu.memory[addr] = data
 }
 
-func (cpu *CPU) mem_write_u16(pos uint16, data uint16) {
+func (cpu *CPU) MemWrite_u16(pos uint16, data uint16) {
 	hi := data >> 8
 	lo := data & 0xff
-	cpu.mem_write(pos, uint8(lo))
-	cpu.mem_write(pos+1, uint8(hi))
+	cpu.MemWrite(pos, uint8(lo))
+	cpu.MemWrite(pos+1, uint8(hi))
 }
 
-func (cpu *CPU) stack_push(data uint8) {
-	addr := stack_base_position + uint16(cpu.stack_pointer)
-	cpu.mem_write(addr, data)
-	cpu.stack_pointer -= 1
+func (cpu *CPU) stackPush(data uint8) {
+	addr := stackBasePosition + uint16(cpu.stackPointer)
+	cpu.MemWrite(addr, data)
+	cpu.stackPointer -= 1
 }
 
-func (cpu *CPU) stack_push_u16(data uint16) {
+func (cpu *CPU) stackPush_u16(data uint16) {
 	hi := data >> 8
 	lo := data & 0xff
-	cpu.stack_push(uint8(hi))
-	cpu.stack_push(uint8(lo))
+	cpu.stackPush(uint8(hi))
+	cpu.stackPush(uint8(lo))
 }
 
-func (cpu *CPU) stack_pop() uint8 {
-	cpu.stack_pointer += 1
-	addr := 0x0100 + uint16(cpu.stack_pointer)
-	data := cpu.mem_read(addr)
+func (cpu *CPU) stackPop() uint8 {
+	cpu.stackPointer += 1
+	addr := stackBasePosition + uint16(cpu.stackPointer)
+	data := cpu.MemRead(addr)
 	return data
 }
 
-func (cpu *CPU) stack_pop_u16() uint16 {
-	lo := uint16(cpu.stack_pop())
-	hi := uint16(cpu.stack_pop())
+func (cpu *CPU) stackPop_u16() uint16 {
+	lo := uint16(cpu.stackPop())
+	hi := uint16(cpu.stackPop())
 	return (hi << 8) | lo
 }
 
-func (cpu *CPU) reset() {
-	cpu.register_a = 0
-	cpu.register_x = 0
+func (cpu *CPU) Reset() {
+	cpu.registerA = 0
+	cpu.registerX = 0
 	cpu.status = 0b100100
-	cpu.stack_pointer = 0xff
+	cpu.stackPointer = 0xff
 	cpu.opcodes = OpCodes
 
-	cpu.program_counter = cpu.mem_read_u16(0xFFFC)
+	cpu.programCounter = cpu.MemRead_u16(0xFFFC)
 }
 
-func (cpu *CPU) load_and_run(program []uint8) {
-	cpu.load(program)
-	cpu.reset()
-	cpu.run()
+func (cpu *CPU) LoadAndRun(program []uint8) {
+	cpu.Load(program)
+	cpu.Reset()
+	cpu.Run()
 }
 
-func (cpu *CPU) load(program []uint8) {
+func (cpu *CPU) Load(program []uint8) {
 	copy(cpu.memory[0x8000:0x8000+len(program)], program)
-	cpu.mem_write_u16(0xFFFC, 0x8000)
+	cpu.MemWrite_u16(0xFFFC, 0x8000)
 }
 
-func (cpu *CPU) run() {
+func (cpu *CPU) Run() {
 	opcodes := cpu.opcodes()
 	var curr_program_counter uint16
 	for {
-		code := cpu.mem_read(cpu.program_counter)
-		cpu.program_counter += 1
-		curr_program_counter = cpu.program_counter
+		code := cpu.MemRead(cpu.programCounter)
+		cpu.programCounter += 1
+		curr_program_counter = cpu.programCounter
 
 		opcode := opcodes[code]
 
@@ -232,8 +232,8 @@ func (cpu *CPU) run() {
 		}
 
 		// A branch didn't occur
-		if curr_program_counter == cpu.program_counter {
-			cpu.program_counter += uint16(opcode.len) - 1
+		if curr_program_counter == cpu.programCounter {
+			cpu.programCounter += uint16(opcode.len) - 1
 		}
 	}
 }
