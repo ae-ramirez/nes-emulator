@@ -88,15 +88,26 @@ func (cpu *CPU) LoadAndRun(program []uint8) {
 	cpu.Run()
 }
 
+func (cpu *CPU) LoadIntoLocation(program []uint8, location uint16) {
+	copy(cpu.memory[location:location+uint16(len(program))], program)
+	cpu.MemWrite_u16(0xFFFC, location)
+}
+
 func (cpu *CPU) Load(program []uint8) {
 	copy(cpu.memory[0x8000:0x8000+len(program)], program)
 	cpu.MemWrite_u16(0xFFFC, 0x8000)
 }
 
 func (cpu *CPU) Run() {
+	cpu.RunWithCallback(func(*CPU) {})
+}
+
+func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 	opcodes := cpu.opcodes()
 	var curr_program_counter uint16
 	for {
+		callback(cpu)
+
 		code := cpu.MemRead(cpu.programCounter)
 		cpu.programCounter += 1
 		curr_program_counter = cpu.programCounter
