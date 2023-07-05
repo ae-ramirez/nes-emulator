@@ -74,8 +74,8 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x50, "BVC", 2, 2 /* +1 if branch succeeds, +2 if to a new page */, Immediate),
 		newOpCode(0x70, "BVS", 2, 2 /* +1 if branch succeeds, +2 if to a new page */, Immediate),
 
-		newOpCode(0x2c, "BIT", 3, 4, Absolute),
 		newOpCode(0x24, "BIT", 2, 3, ZeroPage),
+		newOpCode(0x2c, "BIT", 3, 4, Absolute),
 
 		newOpCode(0x00, "BRK", 1, 7, NoneAddressing),
 
@@ -160,6 +160,8 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x4e, "LSR", 3, 6, Absolute),
 		newOpCode(0x5e, "LSR", 3, 7, Absolute_X),
 
+		newOpCode(0xea, "NOP", 1, 2, NoneAddressing),
+
 		newOpCode(0x09, "ORA", 2, 2, Immediate),
 		newOpCode(0x05, "ORA", 2, 3, ZeroPage),
 		newOpCode(0x15, "ORA", 2, 4, ZeroPage_X),
@@ -170,11 +172,8 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x11, "ORA", 2, 5 /* +1 if page crossed */, Indirect_Y),
 
 		newOpCode(0x48, "PHA", 1, 3, NoneAddressing),
-
 		newOpCode(0x08, "PHP", 1, 3, NoneAddressing),
-
 		newOpCode(0x68, "PLA", 1, 4, NoneAddressing),
-
 		newOpCode(0x28, "PLP", 1, 4, NoneAddressing),
 
 		newOpCode(0x2a, "ROL", 1, 2, NoneAddressing),
@@ -222,16 +221,11 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x94, "STY", 2, 4, ZeroPage_X),
 		newOpCode(0x8c, "STY", 3, 4, Absolute),
 
-		newOpCode(0xaa, "TAX", 1, 7, NoneAddressing),
-
+		newOpCode(0xaa, "TAX", 1, 2, NoneAddressing),
 		newOpCode(0xa8, "TAY", 1, 2, NoneAddressing),
-
 		newOpCode(0xba, "TSX", 1, 2, NoneAddressing),
-
 		newOpCode(0x8a, "TXA", 1, 2, NoneAddressing),
-
 		newOpCode(0x9a, "TXS", 1, 2, NoneAddressing),
-
 		newOpCode(0x98, "TYA", 1, 2, NoneAddressing),
 	}
 
@@ -368,7 +362,7 @@ func (cpu *CPU) bit(mode AddressingMode) {
 func (cpu *CPU) branch(shouldBranch bool) {
 	if shouldBranch {
 		displacement := int8(cpu.MemRead(cpu.programCounter))
-		cpu.programCounter += uint16(displacement)
+		cpu.programCounter += uint16(displacement) + 1
 	}
 }
 
