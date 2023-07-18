@@ -1,6 +1,9 @@
 package cpu
 
-import "fmt"
+import (
+	"al/nes-emulator/bus"
+	"fmt"
+)
 
 const (
 	CarryFlag            uint8 = 0b0000_0001
@@ -20,30 +23,25 @@ type CPU struct {
 	programCounter uint16
 	stackPointer   uint8
 	opcodes        func() map[uint8]*OpCode
-	memory         [0xFFFF + 1]uint8
+	bus            bus.Bus
 }
 
 const stackBasePosition uint16 = 0x0100
 
 func (cpu *CPU) MemRead(addr uint16) uint8 {
-	return cpu.memory[addr]
+	return cpu.bus.MemRead(addr)
 }
 
 func (cpu *CPU) MemRead_u16(pos uint16) uint16 {
-	lo := uint16(cpu.MemRead(pos))
-	hi := uint16(cpu.MemRead(pos + 1))
-	return (hi << 8) | lo
+	return cpu.bus.MemRead_u16(pos)
 }
 
 func (cpu *CPU) MemWrite(addr uint16, data uint8) {
-	cpu.memory[addr] = data
+	cpu.bus.MemWrite(addr, data)
 }
 
 func (cpu *CPU) MemWrite_u16(pos uint16, data uint16) {
-	hi := data >> 8
-	lo := data & 0xff
-	cpu.MemWrite(pos, uint8(lo))
-	cpu.MemWrite(pos+1, uint8(hi))
+	cpu.bus.MemWrite_u16(pos, data)
 }
 
 func (cpu *CPU) stackPush(data uint8) {
@@ -89,13 +87,20 @@ func (cpu *CPU) LoadAndRun(program []uint8) {
 }
 
 func (cpu *CPU) LoadIntoLocation(program []uint8, location uint16) {
-	copy(cpu.memory[location:location+uint16(len(program))], program)
 	cpu.MemWrite_u16(0xFFFC, location)
+	for _, data := range program {
+		cpu.bus.MemWrite(location, data)
+		location += 1
+	}
 }
 
 func (cpu *CPU) Load(program []uint8) {
-	copy(cpu.memory[0x8000:0x8000+len(program)], program)
-	cpu.MemWrite_u16(0xFFFC, 0x8000)
+	location := uint16(0xfff)
+	cpu.MemWrite_u16(0xFFFC, location)
+	for _, data := range program {
+		cpu.bus.MemWrite(location, data)
+		location += 1
+	}
 }
 
 func (cpu *CPU) Run() {
