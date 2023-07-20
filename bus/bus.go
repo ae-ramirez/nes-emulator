@@ -1,8 +1,12 @@
 package bus
 
+import (
+	cart "al/nes-emulator/rom"
+)
+
 type Bus struct {
-	cpuRam  [2048]uint8
-	progRom [0]uint8
+	cpuRam [2048]uint8
+	rom    *cart.Rom
 }
 
 // Mapped memory locations
@@ -19,12 +23,16 @@ const (
 	ROM_PROGRAM_END                  = 0xffff
 )
 
+func (bus *Bus) SetRom(rom *cart.Rom) {
+	bus.rom = rom
+}
+
 func (bus *Bus) MemRead(addr uint16) uint8 {
 	if addr <= CPU_RAM_MIRRORS_END {
 		mirrored_addr := addr & 0x7ff
 		return bus.cpuRam[mirrored_addr]
-	} else if addr <= ROM_PROGRAM && addr <= ROM_PROGRAM_END {
-		return 12
+	} else if ROM_PROGRAM <= addr && addr <= ROM_PROGRAM_END {
+		return bus.readPrgRom(addr)
 	} else {
 		panic("invalid memory read")
 	}
@@ -40,6 +48,8 @@ func (bus *Bus) MemWrite(addr uint16, data uint8) {
 	if addr <= CPU_RAM_MIRRORS_END {
 		mirrored_addr := addr & 0x7ff
 		bus.cpuRam[mirrored_addr] = data
+	} else if ROM_PROGRAM <= addr && addr <= ROM_PROGRAM_END {
+		bus.writePrgRom(addr, data)
 	} else {
 		panic("invalid memory write")
 	}
@@ -50,4 +60,22 @@ func (bus *Bus) MemWrite_u16(pos uint16, data uint16) {
 	lo := data & 0xff
 	bus.MemWrite(pos, uint8(lo))
 	bus.MemWrite(pos+1, uint8(hi))
+}
+
+func (bus *Bus) readPrgRom(addr uint16) uint8 {
+	addr -= 0x8000
+	// mirror adress if necessary
+	if addr >= 0x4000 && len(bus.rom.PrgRom) == 0x4000 {
+		addr = addr % 0x4000
+	}
+	return bus.rom.PrgRom[addr]
+}
+
+func (bus *Bus) writePrgRom(addr uint16, data uint8) {
+	addr -= 0x8000
+	// mirror adress if necessary
+	if addr >= 0x4000 && len(bus.rom.PrgRom) == 0x4000 {
+		addr = addr % 0x4000
+	}
+	bus.rom.PrgRom[addr] = data
 }

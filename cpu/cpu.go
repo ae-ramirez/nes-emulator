@@ -2,6 +2,7 @@ package cpu
 
 import (
 	"al/nes-emulator/bus"
+	"al/nes-emulator/rom"
 	"fmt"
 )
 
@@ -95,6 +96,10 @@ func (cpu *CPU) LoadIntoLocation(program []uint8, location uint16) {
 }
 
 func (cpu *CPU) Load(program []uint8) {
+	rom := &rom.Rom{}
+	rom.InitMemory()
+	cpu.bus.SetRom(rom)
+
 	location := uint16(0xfff)
 	cpu.MemWrite_u16(0xFFFC, location)
 	for _, data := range program {
