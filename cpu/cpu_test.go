@@ -1,7 +1,6 @@
 package cpu
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -188,11 +187,11 @@ func Test0x24BITZeroPage(t *testing.T) {
 	cpu.MemWrite(uint16(addr), val)
 	cpu.LoadAndRun([]uint8{0xa9, 0x00, 0x24, addr, 0x00})
 
-	if cpu.status&NegativeFlag == 0 {
-		t.Error(expectedSetNegativeFlag)
+	if cpu.status&NegativeFlag != 0 {
+		t.Error(expectedUnsetNegativeFlag)
 	}
-	if cpu.status&OverflowFlag == 0 {
-		t.Error(expectedSetOverflowFlag)
+	if cpu.status&OverflowFlag != 0 {
+		t.Error(expectedUnsetOverflowFlag)
 	}
 	if cpu.status&ZeroFlag == 0 {
 		t.Error(expectedSetZeroFlag)
