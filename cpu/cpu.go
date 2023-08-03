@@ -24,25 +24,25 @@ type CPU struct {
 	programCounter uint16
 	stackPointer   uint8
 	opcodes        func() map[uint8]*OpCode
-	bus            bus.Bus
+	Bus            bus.Bus
 }
 
 const stackBasePosition uint16 = 0x0100
 
 func (cpu *CPU) MemRead(addr uint16) uint8 {
-	return cpu.bus.MemRead(addr)
+	return cpu.Bus.MemRead(addr)
 }
 
 func (cpu *CPU) MemRead_u16(pos uint16) uint16 {
-	return cpu.bus.MemRead_u16(pos)
+	return cpu.Bus.MemRead_u16(pos)
 }
 
 func (cpu *CPU) MemWrite(addr uint16, data uint8) {
-	cpu.bus.MemWrite(addr, data)
+	cpu.Bus.MemWrite(addr, data)
 }
 
 func (cpu *CPU) MemWrite_u16(pos uint16, data uint16) {
-	cpu.bus.MemWrite_u16(pos, data)
+	cpu.Bus.MemWrite_u16(pos, data)
 }
 
 func (cpu *CPU) stackPush(data uint8) {
@@ -90,7 +90,7 @@ func (cpu *CPU) LoadAndRun(program []uint8) {
 func (cpu *CPU) LoadIntoLocation(program []uint8, location uint16) {
 	cpu.MemWrite_u16(0xFFFC, location)
 	for _, data := range program {
-		cpu.bus.MemWrite(location, data)
+		cpu.Bus.MemWrite(location, data)
 		location += 1
 	}
 }
@@ -98,12 +98,12 @@ func (cpu *CPU) LoadIntoLocation(program []uint8, location uint16) {
 func (cpu *CPU) Load(program []uint8) {
 	rom := &rom.Rom{}
 	rom.InitMemory()
-	cpu.bus.SetRom(rom)
+	cpu.Bus.SetRom(rom)
 
 	location := uint16(0xfff)
 	cpu.MemWrite_u16(0xFFFC, location)
 	for _, data := range program {
-		cpu.bus.MemWrite(location, data)
+		cpu.Bus.MemWrite(location, data)
 		location += 1
 	}
 }
