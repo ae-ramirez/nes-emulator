@@ -2,6 +2,7 @@ package main
 
 import (
 	"al/nes-emulator/cpu"
+	"al/nes-emulator/rom"
 	"flag"
 	"fmt"
 	"log"
@@ -44,7 +45,9 @@ func main() {
 	}
 
 	c := &cpu.CPU{}
-	c.Load(gameCode)
+	rom := &rom.Rom{}
+	rom.Init(gameCode)
+	c.Bus.SetRom(rom)
 	c.Reset()
 
 	// init sdl2
