@@ -72,6 +72,10 @@ func (cpu *CPU) stackPop_u16() uint16 {
 	return (hi << 8) | lo
 }
 
+func (cpu *CPU) SetProgramCounter(programCounter uint16) {
+	cpu.programCounter = programCounter
+}
+
 func (cpu *CPU) Reset() {
 	cpu.registerA = 0
 	cpu.registerX = 0
