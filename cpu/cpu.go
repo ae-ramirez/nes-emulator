@@ -28,6 +28,7 @@ type CPU struct {
 }
 
 const stackBasePosition uint16 = 0x0100
+const stackReset = 0xff
 
 func (cpu *CPU) MemRead(addr uint16) uint8 {
 	return cpu.Bus.MemRead(addr)
@@ -74,8 +75,9 @@ func (cpu *CPU) stackPop_u16() uint16 {
 func (cpu *CPU) Reset() {
 	cpu.registerA = 0
 	cpu.registerX = 0
+	cpu.registerY = 0
 	cpu.status = 0b100100
-	cpu.stackPointer = 0xff
+	cpu.stackPointer = stackReset
 	cpu.opcodes = OpCodes
 
 	cpu.programCounter = cpu.MemRead_u16(0xFFFC)
