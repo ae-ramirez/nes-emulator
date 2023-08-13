@@ -28,7 +28,7 @@ type CPU struct {
 }
 
 const stackBasePosition uint16 = 0x0100
-const stackReset = 0xff
+const stackReset = 0xfd
 
 func (cpu *CPU) MemRead(addr uint16) uint8 {
 	return cpu.Bus.MemRead(addr)
