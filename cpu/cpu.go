@@ -4,6 +4,7 @@ import (
 	"al/nes-emulator/bus"
 	"al/nes-emulator/rom"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -263,4 +264,86 @@ func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 			cpu.programCounter += uint16(opcode.len) - 1
 		}
 	}
+}
+
+func Trace(c *CPU) string {
+	code := c.MemRead(c.programCounter)
+	opcode := c.opcodes()[code]
+
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("%04X  ", c.programCounter))
+	sb.WriteString(fmt.Sprintf("%02X ", code))
+
+	if opcode.len == 1 {
+		sb.WriteString("       ")
+	} else if opcode.len == 2 {
+		sb.WriteString(fmt.Sprintf("%02X     ", c.MemRead(c.programCounter+1)))
+	} else {
+		sb.WriteString(fmt.Sprintf("%02X %02X ", c.MemRead(c.programCounter+1), c.MemRead(c.programCounter+2)))
+	}
+
+	sb.WriteString(opcode.mnemonic)
+	sb.WriteString(" ")
+
+	if opcode.mode == NoneAddressing {
+		sb.WriteString("                            ")
+	} else {
+		var addr uint16
+		c.programCounter += 1
+		addr = c.getOperandAddress(opcode.mode)
+
+		var assembly string
+		if opcode.mode == Immediate {
+			assembly = fmt.Sprintf("#$%02X                       ", c.MemRead(addr))
+		} else if opcode.mode == ZeroPage {
+			assembly = fmt.Sprintf("$%02X ", c.MemRead(addr))
+		} else if opcode.mode == ZeroPage_X {
+			assembly = fmt.Sprintf("($%02X,X) ", c.MemRead(addr))
+			addr2 := uint16(c.MemRead(addr)) + uint16(c.registerX)
+			val := c.MemRead(addr2)
+			sb.WriteString(fmt.Sprintf("@ %02X = %02X        ", addr2, val))
+		} else if opcode.mode == ZeroPage_Y {
+			addr2 := uint16(c.MemRead(addr))
+			assembly = fmt.Sprintf("($%02X,Y) ", addr2)
+			addr3 := addr2 + uint16(c.registerY)
+			val := c.MemRead(addr3)
+			sb.WriteString(fmt.Sprintf("@ %02X = %02X        ", addr3, val))
+		} else if opcode.mode == Absolute {
+			assembly = fmt.Sprintf("$%04X                        ", c.MemRead_u16(addr))
+		} else if opcode.mode == Absolute_X {
+			addr2 := c.MemRead_u16(addr)
+			assembly = fmt.Sprintf("$%04X,X ", addr2)
+			addr3 := addr2 + uint16(c.registerX)
+			val := c.MemRead(addr3)
+			sb.WriteString(fmt.Sprintf("@ %04X = %02X", addr3, val))
+		} else if opcode.mode == Absolute_Y {
+			addr2 := c.MemRead_u16(addr)
+			assembly = fmt.Sprintf("$%04X,Y ", addr2)
+			addr3 := addr2 + uint16(c.registerY)
+			val := c.MemRead(addr3)
+			sb.WriteString(fmt.Sprintf("@ %04X = %02X", addr3, val))
+		} else if opcode.mode == Indirect_X {
+			base := c.MemRead(addr)
+			sb.WriteString(fmt.Sprintf("($%02X,X) ", base))
+			ptr := base + c.registerX
+			addr := c.MemRead_u16(uint16(ptr))
+			val := c.MemRead(addr)
+			sb.WriteString(fmt.Sprintf("@ %02X = %02X%02X = ", ptr, addr, val))
+		} else if opcode.mode == Indirect_Y {
+			base := c.MemRead(addr)
+			sb.WriteString(fmt.Sprintf("($%02X,Y) ", base))
+			deref_base := c.MemRead_u16(uint16(base))
+			val := c.MemRead(deref_base)
+			sb.WriteString(fmt.Sprintf("@ %04X = %02X  ", deref_base, val))
+		}
+
+		c.programCounter -= 1
+		sb.WriteString(assembly)
+		sb.WriteString(" ")
+	}
+
+	sb.WriteString(fmt.Sprintf("A:%02X X:%02X Y:%02X P:%02X SP:%02X", c.registerA, c.registerX, c.registerY, c.status, c.stackPointer))
+
+	return sb.String()
 }
