@@ -1,6 +1,8 @@
 package cpu
 
 import (
+	"al/nes-emulator/bus"
+	"al/nes-emulator/rom"
 	"testing"
 )
 
@@ -386,5 +388,72 @@ func Test0xe6INCIncrementFromMemory(t *testing.T) {
 	}
 	if cpu.status&NegativeFlag == 0 {
 		t.Error(expectedSetNegativeFlag)
+	}
+}
+
+func TestTraceFormat(t *testing.T) {
+	programCounter := uint16(0x64)
+
+	cpu := &CPU{}
+	rom := &rom.Rom{}
+	rom.InitMemory()
+	cpu.Bus.SetRom(rom)
+	cpu.LoadIntoLocation([]uint8{0xa2, 0x01, 0xca, 0x88, 0x00}, programCounter)
+	cpu.Reset()
+	cpu.SetProgramCounter(programCounter)
+	cpu.registerA = 1
+	cpu.registerX = 2
+	cpu.registerY = 3
+
+	var result []string
+	cpu.RunWithCallback(func(c *CPU) {
+		trace := Trace(c)
+		result = append(result, trace)
+	})
+
+	expected := "0064  A2 01     LDX #$01                        A:01 X:02 Y:03 P:24 SP:FD"
+	if result[0] != expected {
+		t.Errorf("result:\n%s\ndoes not equal expected result:\n%s\n", result[0], expected)
+	}
+
+	expected = "0066  CA        DEX                             A:01 X:01 Y:03 P:24 SP:FD"
+	if result[1] != expected {
+		t.Errorf("result:\n%s\ndoes not equal expected result:\n%s", result[1], expected)
+	}
+
+	expected = "0067  88        DEY                             A:01 X:00 Y:03 P:26 SP:FD"
+	if result[2] != expected {
+		t.Errorf("result:\n%s\ndoes not equal expected result:\n%s", result[2], expected)
+	}
+}
+
+func TestTraceMemoryAccess(t *testing.T) {
+	rom := rom.Rom{}
+	rom.InitMemory()
+	bus := bus.Bus{}
+	bus.SetRom(&rom)
+	// instruction
+	bus.MemWrite(100, 0x11)
+	bus.MemWrite(101, 0x33)
+	// data
+	bus.MemWrite(0x33, 00)
+	bus.MemWrite(0x34, 04)
+	// target cell
+	bus.MemWrite(0x400, 0xAA)
+
+	cpu := &CPU{Bus: bus}
+	cpu.Reset()
+	cpu.SetProgramCounter(0x64)
+	cpu.registerY = 0
+
+	var result []string
+	cpu.RunWithCallback(func(c *CPU) {
+		trace := Trace(c)
+		result = append(result, trace)
+	})
+
+	expected := "0064  11 33     ORA ($33),Y = 0400 @ 0400 = AA  A:00 X:00 Y:00 P:24 SP:FD"
+	if result[0] != expected {
+		t.Errorf("result:\n%s\ndoes not equal expected result:\n%s", result[0], expected)
 	}
 }
