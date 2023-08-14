@@ -606,9 +606,9 @@ func (cpu *CPU) rts() {
 func (cpu *CPU) sbc(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
-	val = ^val + 1
+	val = ^val
 
-	sub := uint16(cpu.registerA) + uint16(val) - 1
+	sub := uint16(cpu.registerA) + uint16(val)
 	if cpu.status&CarryFlag != 0 {
 		sub += 1
 	}
