@@ -280,7 +280,7 @@ func Trace(c *CPU) string {
 	} else if opcode.len == 2 {
 		sb.WriteString(fmt.Sprintf("%02X     ", c.MemRead(c.programCounter+1)))
 	} else {
-		sb.WriteString(fmt.Sprintf("%02X %02X ", c.MemRead(c.programCounter+1), c.MemRead(c.programCounter+2)))
+		sb.WriteString(fmt.Sprintf("%02X %02X  ", c.MemRead(c.programCounter+1), c.MemRead(c.programCounter+2)))
 	}
 
 	sb.WriteString(opcode.mnemonic)
@@ -292,15 +292,28 @@ func Trace(c *CPU) string {
 		var addr uint16
 		c.programCounter += 1
 		addr = c.getOperandAddress(opcode.mode)
+		c.programCounter -= 1
 
 		var assembly string
 		if opcode.mode == Immediate {
-			assembly = fmt.Sprintf("#$%02X                       ", c.MemRead(addr))
+			if opcode.code == 0x90 || // branching instructions
+				opcode.code == 0xb0 ||
+				opcode.code == 0xf0 ||
+				opcode.code == 0x30 ||
+				opcode.code == 0xd0 ||
+				opcode.code == 0x10 ||
+				opcode.code == 0x50 ||
+				opcode.code == 0x70 {
+				assembly = fmt.Sprintf("$%04X                      ", uint16(c.MemRead(addr))+c.programCounter+2)
+			} else { // non branching instructions
+				assembly = fmt.Sprintf("#$%02X                       ", c.MemRead(addr))
+			}
 		} else if opcode.mode == ZeroPage {
-			assembly = fmt.Sprintf("$%02X ", c.MemRead(addr))
+			val := c.MemRead(addr)
+			assembly = fmt.Sprintf("$%02X = %02X                   ", addr, val)
 		} else if opcode.mode == ZeroPage_X {
-			assembly = fmt.Sprintf("($%02X,X) ", c.MemRead(addr))
 			addr2 := uint16(c.MemRead(addr)) + uint16(c.registerX)
+			assembly = fmt.Sprintf("($%02X,X) = %02X ", c.MemRead(addr), addr2)
 			val := c.MemRead(addr2)
 			sb.WriteString(fmt.Sprintf("@ %02X = %02X        ", addr2, val))
 		} else if opcode.mode == ZeroPage_Y {
@@ -310,7 +323,7 @@ func Trace(c *CPU) string {
 			val := c.MemRead(addr3)
 			sb.WriteString(fmt.Sprintf("@ %02X = %02X        ", addr3, val))
 		} else if opcode.mode == Absolute {
-			assembly = fmt.Sprintf("$%04X                        ", c.MemRead_u16(addr))
+			assembly = fmt.Sprintf("$%04X                      ", addr)
 		} else if opcode.mode == Absolute_X {
 			addr2 := c.MemRead_u16(addr)
 			assembly = fmt.Sprintf("$%04X,X ", addr2)
@@ -322,23 +335,22 @@ func Trace(c *CPU) string {
 			assembly = fmt.Sprintf("$%04X,Y ", addr2)
 			addr3 := addr2 + uint16(c.registerY)
 			val := c.MemRead(addr3)
-			sb.WriteString(fmt.Sprintf("@ %04X = %02X", addr3, val))
+			sb.WriteString(fmt.Sprintf("@ %04X = %02X                   ", addr3, val))
 		} else if opcode.mode == Indirect_X {
 			base := c.MemRead(addr)
 			sb.WriteString(fmt.Sprintf("($%02X,X) ", base))
 			ptr := base + c.registerX
 			addr := c.MemRead_u16(uint16(ptr))
 			val := c.MemRead(addr)
-			sb.WriteString(fmt.Sprintf("@ %02X = %02X%02X = ", ptr, addr, val))
+			sb.WriteString(fmt.Sprintf("@ %02X = %04X = %02X", ptr, addr, val))
 		} else if opcode.mode == Indirect_Y {
-			base := c.MemRead(addr)
-			sb.WriteString(fmt.Sprintf("($%02X,Y) ", base))
-			deref_base := c.MemRead_u16(uint16(base))
+			addr2 := c.MemRead(c.programCounter + 1)
+			sb.WriteString(fmt.Sprintf("($%02X),Y = %04X ", addr2, addr))
+			deref_base := c.MemRead_u16(uint16(addr2))
 			val := c.MemRead(deref_base)
-			sb.WriteString(fmt.Sprintf("@ %04X = %02X  ", deref_base, val))
+			sb.WriteString(fmt.Sprintf("@ %04X = %02X ", deref_base, val))
 		}
 
-		c.programCounter -= 1
 		sb.WriteString(assembly)
 		sb.WriteString(" ")
 	}
