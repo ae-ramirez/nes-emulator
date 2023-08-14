@@ -368,7 +368,7 @@ func (cpu *CPU) branch(shouldBranch bool) {
 
 func (cpu *CPU) brk() {
 	cpu.stackPush_u16(cpu.programCounter)
-	cpu.stackPush(cpu.status)
+	cpu.stackPush(cpu.status | 0b0011_0000)
 
 	cpu.programCounter = cpu.MemRead_u16(0xfffe)
 	cpu.setStatusFlag(BreakCommandFlag, true)
@@ -538,7 +538,7 @@ func (cpu *CPU) pha() {
 }
 
 func (cpu *CPU) php() {
-	cpu.stackPush(cpu.status)
+	cpu.stackPush(cpu.status | 0b0011_0000)
 }
 
 func (cpu *CPU) pla() {
@@ -547,7 +547,7 @@ func (cpu *CPU) pla() {
 }
 
 func (cpu *CPU) plp() {
-	cpu.status = cpu.stackPop()
+	cpu.status = (cpu.stackPop() | 0b0010_0000) & 0b1110_1111
 }
 
 func (cpu *CPU) rol(mode AddressingMode) {
