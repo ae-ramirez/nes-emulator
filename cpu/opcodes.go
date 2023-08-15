@@ -472,19 +472,20 @@ func (cpu *CPU) jmp_absolute() {
 }
 
 func (cpu *CPU) jmp_indirect() {
-	var jump_addr uint16
 	addr := cpu.MemRead_u16(cpu.programCounter)
+	jumpAddr := cpu.getJmpIndirectAdress(addr)
+	cpu.programCounter = jumpAddr
+}
 
+func (cpu *CPU) getJmpIndirectAdress(addr uint16) uint16 {
 	if addr&0xff == 0xff {
 		// accounting for 6502 bug
 		lo := uint16(cpu.MemRead(addr))
 		hi := uint16(cpu.MemRead(addr & 0xff00))
-		jump_addr = (hi << 8) | lo
+		return (hi << 8) | lo
 	} else {
-		jump_addr = cpu.MemRead_u16(addr)
+		return cpu.MemRead_u16(addr)
 	}
-
-	cpu.programCounter = jump_addr
 }
 
 func (cpu *CPU) jsr(mode AddressingMode) {

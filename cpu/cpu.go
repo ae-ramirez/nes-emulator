@@ -302,19 +302,19 @@ func Trace(c *CPU) string {
 		c.programCounter -= 1
 
 		var assembly string
-		if opcode.mode == Immediate {
-			if opcode.code == 0x90 || // branching instructions
-				opcode.code == 0xb0 ||
-				opcode.code == 0xf0 ||
-				opcode.code == 0x30 ||
-				opcode.code == 0xd0 ||
-				opcode.code == 0x10 ||
-				opcode.code == 0x50 ||
-				opcode.code == 0x70 {
-				assembly = fmt.Sprintf("$%04X                      ", uint16(c.MemRead(addr))+c.programCounter+2)
-			} else { // non branching instructions
-				assembly = fmt.Sprintf("#$%02X                       ", c.MemRead(addr))
-			}
+		if opcode.code == 0x6c { // indirect jump
+			assembly = fmt.Sprintf("($%04X) = %04X             ", addr, c.getJmpIndirectAdress(addr))
+		} else if opcode.code == 0x90 || // branching instructions
+			opcode.code == 0xb0 ||
+			opcode.code == 0xf0 ||
+			opcode.code == 0x30 ||
+			opcode.code == 0xd0 ||
+			opcode.code == 0x10 ||
+			opcode.code == 0x50 ||
+			opcode.code == 0x70 {
+			assembly = fmt.Sprintf("$%04X                      ", uint16(c.MemRead(addr))+c.programCounter+2)
+		} else if opcode.mode == Immediate {
+			assembly = fmt.Sprintf("#$%02X                       ", c.MemRead(addr))
 		} else if opcode.mode == ZeroPage {
 			val := c.MemRead(addr)
 			assembly = fmt.Sprintf("$%02X = %02X                   ", addr, val)
