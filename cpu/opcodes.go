@@ -595,7 +595,7 @@ func (cpu *CPU) ror(mode AddressingMode) {
 }
 
 func (cpu *CPU) rti() {
-	cpu.status = cpu.stackPop()
+	cpu.status = cpu.stackPop() | 0b0010_0000
 	cpu.programCounter = cpu.stackPop_u16()
 }
 
