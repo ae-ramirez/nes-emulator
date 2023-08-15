@@ -323,7 +323,14 @@ func Trace(c *CPU) string {
 			val := c.MemRead(addr3)
 			sb.WriteString(fmt.Sprintf("@ %02X = %02X        ", addr3, val))
 		} else if opcode.mode == Absolute {
-			assembly = fmt.Sprintf("$%04X                      ", addr)
+			assembly = fmt.Sprintf("$%04X ", addr)
+			if opcode.code == 0x4c ||
+				opcode.code == 0x20 {
+				assembly += "    "
+			} else {
+				assembly += fmt.Sprintf("= %02X", c.MemRead(addr))
+			}
+			assembly += "                 "
 		} else if opcode.mode == Absolute_X {
 			addr2 := c.MemRead_u16(addr)
 			assembly = fmt.Sprintf("$%04X,X ", addr2)
