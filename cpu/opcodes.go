@@ -564,7 +564,7 @@ func (cpu *CPU) rol(mode AddressingMode) {
 		val = cpu.registerA
 	} else {
 		addr := cpu.getOperandAddress(mode)
-		val := cpu.MemRead(addr)
+		val = cpu.MemRead(addr)
 		setCarryFlag = val&0b1000_0000 != 0
 		val <<= 1
 		val |= cpu.status & CarryFlag
