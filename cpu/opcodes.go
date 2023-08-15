@@ -254,11 +254,11 @@ func (cpu *CPU) getOperandAddress(mode AddressingMode) uint16 {
 		return cpu.MemRead_u16(cpu.programCounter)
 	case ZeroPage_X:
 		pos := cpu.MemRead(cpu.programCounter)
-		addr := uint16(pos) + uint16(cpu.registerX)
+		addr := uint16(pos + cpu.registerX)
 		return addr
 	case ZeroPage_Y:
 		pos := cpu.MemRead(cpu.programCounter)
-		addr := uint16(pos) + uint16(cpu.registerY)
+		addr := uint16(pos + cpu.registerY)
 		return addr
 	case Absolute_X:
 		base := cpu.MemRead_u16(cpu.programCounter)
