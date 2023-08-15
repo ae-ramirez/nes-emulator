@@ -277,7 +277,9 @@ func (cpu *CPU) getOperandAddress(mode AddressingMode) uint16 {
 		return (uint16(hi))<<8 | uint16(lo)
 	case Indirect_Y:
 		base := cpu.MemRead(cpu.programCounter)
-		deref_base := cpu.MemRead_u16(uint16(base))
+		lo := uint16(cpu.MemRead(uint16(base)))
+		hi := uint16(cpu.MemRead(uint16(base + 1)))
+		deref_base := (hi << 8) | lo
 		return deref_base + uint16(cpu.registerY)
 	default:
 		panic(fmt.Errorf("mode %#v is not supported", mode))
