@@ -287,7 +287,14 @@ func Trace(c *CPU) string {
 	sb.WriteString(" ")
 
 	if opcode.mode == NoneAddressing {
-		sb.WriteString("                            ")
+		if opcode.code == 0x4a ||
+			opcode.code == 0x0a ||
+			opcode.code == 0x6a ||
+			opcode.code == 0x2a {
+			sb.WriteString("A                           ")
+		} else {
+			sb.WriteString("                            ")
+		}
 	} else {
 		var addr uint16
 		c.programCounter += 1
