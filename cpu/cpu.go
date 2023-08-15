@@ -351,12 +351,11 @@ func Trace(c *CPU) string {
 			val := c.MemRead(addr3)
 			sb.WriteString(fmt.Sprintf("@ %04X = %02X                   ", addr3, val))
 		} else if opcode.mode == Indirect_X {
-			base := c.MemRead(addr)
+			base := c.MemRead(c.programCounter + 1)
 			sb.WriteString(fmt.Sprintf("($%02X,X) ", base))
 			ptr := base + c.registerX
-			addr := c.MemRead_u16(uint16(ptr))
 			val := c.MemRead(addr)
-			sb.WriteString(fmt.Sprintf("@ %02X = %04X = %02X", ptr, addr, val))
+			sb.WriteString(fmt.Sprintf("@ %02X = %04X = %02X   ", ptr, addr, val))
 		} else if opcode.mode == Indirect_Y {
 			addr2 := c.MemRead(c.programCounter + 1)
 			sb.WriteString(fmt.Sprintf("($%02X),Y = %04X ", addr2, addr))

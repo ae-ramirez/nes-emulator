@@ -271,7 +271,10 @@ func (cpu *CPU) getOperandAddress(mode AddressingMode) uint16 {
 	case Indirect_X:
 		base := cpu.MemRead(cpu.programCounter)
 		ptr := base + cpu.registerX
-		return cpu.MemRead_u16(uint16(ptr))
+		lo := cpu.MemRead(uint16(ptr))
+		ptr += 1
+		hi := cpu.MemRead(uint16(ptr))
+		return (uint16(hi))<<8 | uint16(lo)
 	case Indirect_Y:
 		base := cpu.MemRead(cpu.programCounter)
 		deref_base := cpu.MemRead_u16(uint16(base))
