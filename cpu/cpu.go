@@ -339,17 +339,15 @@ func Trace(c *CPU) string {
 			}
 			assembly += "                 "
 		} else if opcode.mode == Absolute_X {
-			addr2 := c.MemRead_u16(addr)
-			assembly = fmt.Sprintf("$%04X,X ", addr2)
-			addr3 := addr2 + uint16(c.registerX)
-			val := c.MemRead(addr3)
-			sb.WriteString(fmt.Sprintf("@ %04X = %02X", addr3, val))
+			base := c.MemRead_u16(c.programCounter + 1)
+			assembly = fmt.Sprintf("$%04X,X ", base)
+			val := c.MemRead(addr)
+			assembly += fmt.Sprintf("@ %04X = %02X        ", addr, val)
 		} else if opcode.mode == Absolute_Y {
-			addr2 := c.MemRead_u16(addr)
-			assembly = fmt.Sprintf("$%04X,Y ", addr2)
-			addr3 := addr2 + uint16(c.registerY)
-			val := c.MemRead(addr3)
-			sb.WriteString(fmt.Sprintf("@ %04X = %02X                   ", addr3, val))
+			base := c.MemRead_u16(c.programCounter + 1)
+			assembly = fmt.Sprintf("$%04X,Y ", base)
+			val := c.MemRead(addr)
+			assembly += fmt.Sprintf("@ %04X = %02X        ", addr, val)
 		} else if opcode.mode == Indirect_X {
 			base := c.MemRead(c.programCounter + 1)
 			sb.WriteString(fmt.Sprintf("($%02X,X) ", base))
