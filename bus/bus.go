@@ -1,7 +1,8 @@
 package bus
 
 import (
-	cart "al/nes-emulator/rom"
+	"al/nes-emulator/rom"
+	"fmt"
 )
 
 type Bus struct {
@@ -28,13 +29,14 @@ func (bus *Bus) SetRom(rom *cart.Rom) {
 }
 
 func (bus *Bus) MemRead(addr uint16) uint8 {
-	if addr <= CPU_RAM_MIRRORS_END {
+	switch {
+	case addr <= CPU_RAM_MIRRORS_END:
 		mirrored_addr := addr & 0x7ff
 		return bus.cpuRam[mirrored_addr]
-	} else if ROM_PROGRAM <= addr && addr <= ROM_PROGRAM_END {
+	case ROM_PROGRAM <= addr && addr <= ROM_PROGRAM_END:
 		return bus.readPrgRom(addr)
-	} else {
-		panic("invalid memory read")
+	default:
+		panic(fmt.Sprintf("invalid memory read of addr: %04x", addr))
 	}
 }
 
@@ -45,13 +47,14 @@ func (bus *Bus) MemRead_u16(pos uint16) uint16 {
 }
 
 func (bus *Bus) MemWrite(addr uint16, data uint8) {
-	if addr <= CPU_RAM_MIRRORS_END {
+	switch {
+	case addr <= CPU_RAM_MIRRORS_END:
 		mirrored_addr := addr & 0x7ff
 		bus.cpuRam[mirrored_addr] = data
-	} else if ROM_PROGRAM <= addr && addr <= ROM_PROGRAM_END {
+	case ROM_PROGRAM <= addr && addr <= ROM_PROGRAM_END:
 		bus.writePrgRom(addr, data)
-	} else {
-		panic("invalid memory write")
+	default:
+		panic(fmt.Sprintf("invalid memory write to addr: %04x"))
 	}
 }
 
