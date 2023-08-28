@@ -15,6 +15,8 @@ type PPU struct {
 	mirroring          rom.Mirroring
 
 	control controlRegister // 0x2000
+	mask    maskRegister    // 0x2001
+	status  statusRegister  // 0x2002
 	addr    AddrRegister    // 0x2003
 
 }
@@ -30,6 +32,15 @@ func (ppu *PPU) WriteToPPUAddress(value uint8) {
 
 func (ppu *PPU) WriteToControl(value uint8) {
 	ppu.control.update(value)
+}
+
+func (ppu *PPU) WriteToMask(value uint8) {
+	ppu.mask.update(value)
+}
+
+func (ppu *PPU) ReadStatus() uint8 {
+	ppu.addr.resetLatch()
+	return ppu.status.read()
 }
 
 func (ppu *PPU) WriteToData(value uint8) {
@@ -103,4 +114,3 @@ func (ppu *PPU) writeData(data uint8) {
 		panic(fmt.Sprintf("unexpected write to mirrored space, addr = %02X", addr))
 	}
 }
-

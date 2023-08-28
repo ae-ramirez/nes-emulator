@@ -32,6 +32,49 @@ func (cr *controlRegister) update(data uint8) {
 	*cr = controlRegister(data)
 }
 
+// maskRegister is the ppu mask register (0x2001).
+type maskRegister uint8
+type maskRegisterFlag uint8
+
+const (
+	Greyscale maskRegisterFlag = iota
+	ShowBackgroundInEightLeftmostPixels
+	ShowSpritesInEightLeftmostPixels
+	ShowBackground
+	ShowSprites
+	EmphasizeRed
+	EmphasizeGreen
+	EmphasizeBlue
+)
+
+func (mr maskRegister) hasFlag(flag maskRegisterFlag) bool {
+	return uint8(mr)&uint8(flag) != 0
+}
+
+func (mr *maskRegister) update(data uint8) {
+	*mr = maskRegister(data)
+}
+
+// statusRegister is the status register (0x2002).
+// See: https://www.nesdev.org/wiki/PPU_registers#PPUSTATUS
+type statusRegister uint8
+type statusRegisterFlag uint8
+
+const (
+	PPUOpenBus0 statusRegisterFlag = iota
+	PPUOpenBus1
+	PPUOpenBus2
+	PPUOpenBus3
+	PPUOpenBus4
+	SpriteOverflow
+	SpriteZeroHit
+	VerticalBlank
+)
+
+func (sr statusRegister) read() uint8 {
+	return uint8(sr)
+}
+
 // AddrRegister is the ppu adress register (0x2006) used by the cpu to access
 // ppu memory. Two total writes are used to specify a location to read/write to.
 // The address register for the ppu does not use little endian notation.

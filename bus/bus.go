@@ -39,6 +39,8 @@ func (bus *Bus) MemRead(addr uint16) uint8 {
 	case addr == 0x2000 || addr == 0x2001 || addr == 0x2003 ||
 		addr == 0x2005 || addr == 0x2006 || addr == 0x4014:
 		panic(fmt.Sprintf("Attempting to write to a read only PPU adress: %04x", addr))
+	case addr == 0x2002:
+		return bus.ppu.ReadStatus()
 	case addr == 0x2007:
 		return bus.ppu.ReadData()
 	case addr <= PPU_REGISTERS_MIRRORS_END:
@@ -64,6 +66,8 @@ func (bus *Bus) MemWrite(addr uint16, data uint8) {
 		bus.cpuRam[mirrored_addr] = data
 	case addr == 0x2000:
 		bus.ppu.WriteToControl(data)
+	case addr == 0x2001:
+		bus.ppu.WriteToMask(data)
 	case addr == 0x2006:
 		bus.ppu.WriteToPPUAddress(data)
 	case addr == 0x2007:
