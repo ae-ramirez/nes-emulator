@@ -28,7 +28,7 @@ func (cr controlRegister) getvramAdressIncrementSize() uint8 {
 	}
 }
 
-func (cr *controlRegister) update(data uint8) {
+func (cr *controlRegister) write(data uint8) {
 	*cr = controlRegister(data)
 }
 
@@ -51,7 +51,7 @@ func (mr maskRegister) hasFlag(flag maskRegisterFlag) bool {
 	return uint8(mr)&uint8(flag) != 0
 }
 
-func (mr *maskRegister) update(data uint8) {
+func (mr *maskRegister) write(data uint8) {
 	*mr = maskRegister(data)
 }
 
@@ -73,6 +73,28 @@ const (
 
 func (sr statusRegister) read() uint8 {
 	return uint8(sr)
+}
+
+// OAMAddrRegister is the OAM address register (0x2003).
+type OAMAddrRegister uint8
+
+func (oar *OAMAddrRegister) write(data uint8) {
+	*oar = OAMAddrRegister(data)
+}
+
+func (oar *OAMAddrRegister) incremenmt() {
+	*oar = OAMAddrRegister(uint8(*oar) + 1)
+}
+
+// OAMDataRegister is the OAM data register (0x2004).
+type OAMDataRegister uint8
+
+func (odr OAMAddrRegister) read() uint8 {
+	return uint8(odr)
+}
+
+func (odr *OAMDataRegister) write(data uint8) {
+	*odr = OAMDataRegister(data)
 }
 
 // AddrRegister is the ppu adress register (0x2006) used by the cpu to access

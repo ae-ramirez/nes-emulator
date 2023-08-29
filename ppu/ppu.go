@@ -14,10 +14,13 @@ type PPU struct {
 	internalDataBuffer uint8
 	mirroring          rom.Mirroring
 
-	control controlRegister // 0x2000
-	mask    maskRegister    // 0x2001
-	status  statusRegister  // 0x2002
-	addr    AddrRegister    // 0x2003
+	// registers
+	control    controlRegister // 0x2000
+	mask       maskRegister    // 0x2001
+	status     statusRegister  // 0x2002
+	oamAddr    OAMAddrRegister // 0x2003
+	oamDataReg OAMDataRegister // 0x2004
+	addr       AddrRegister    // 0x2006
 
 }
 
@@ -31,16 +34,29 @@ func (ppu *PPU) WriteToPPUAddress(value uint8) {
 }
 
 func (ppu *PPU) WriteToControl(value uint8) {
-	ppu.control.update(value)
+	ppu.control.write(value)
 }
 
 func (ppu *PPU) WriteToMask(value uint8) {
-	ppu.mask.update(value)
+	ppu.mask.write(value)
 }
 
 func (ppu *PPU) ReadStatus() uint8 {
 	ppu.addr.resetLatch()
 	return ppu.status.read()
+}
+
+func (ppu *PPU) WriteToOAMAddress(value uint8) {
+	ppu.oamAddr.write(value)
+}
+
+func (ppu *PPU) WriteToOAMData(value uint8) {
+	ppu.oamAddr.incremenmt()
+	ppu.oamDataReg.write(value)
+}
+
+func (ppu *PPU) ReadOAMData() uint8 {
+	return ppu.oamData[ppu.oamAddr.read()]
 }
 
 func (ppu *PPU) WriteToData(value uint8) {
