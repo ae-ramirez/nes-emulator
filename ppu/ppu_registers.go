@@ -97,6 +97,33 @@ func (odr *OAMDataRegister) write(data uint8) {
 	*odr = OAMDataRegister(data)
 }
 
+// scrollRegister is the scroll register (0x2005)
+type scrollRegister struct {
+	posX uint8
+	posY uint8
+}
+
+func (sr scrollRegister) set(x uint8, y uint8) {
+	sr.posX = x
+	sr.posY = y
+}
+
+func (sr scrollRegister) write(data uint8, writePosX bool) {
+	if writePosX {
+		sr.posX = data
+	} else {
+		sr.posY = data
+	}
+}
+
+func (sr scrollRegister) getPosX() uint8 {
+	return sr.posX
+}
+
+func (sr scrollRegister) getPosY() uint8 {
+	return sr.posY
+}
+
 // AddrRegister is the ppu adress register (0x2006) used by the cpu to access
 // ppu memory. Two total writes are used to specify a location to read/write to.
 // The address register for the ppu does not use little endian notation.
@@ -104,7 +131,6 @@ func (odr *OAMDataRegister) write(data uint8) {
 type AddrRegister struct {
 	valHi  uint8
 	valLow uint8
-	loPtr  bool
 }
 
 func (ar *AddrRegister) set(data uint16) {
@@ -116,8 +142,8 @@ func (ar *AddrRegister) get() uint16 {
 	return (uint16(ar.valHi) << 8) | uint16(ar.valLow)
 }
 
-func (ar *AddrRegister) update(data uint8) {
-	if ar.loPtr {
+func (ar *AddrRegister) update(data uint8, loPtr bool) {
+	if loPtr {
 		ar.valHi = data
 	} else {
 		ar.valLow = data
@@ -129,7 +155,6 @@ func (ar *AddrRegister) update(data uint8) {
 	}
 
 	ar.set(addr)
-	ar.loPtr = !ar.loPtr
 }
 
 func (ar *AddrRegister) increment(data uint8) {
@@ -143,8 +168,4 @@ func (ar *AddrRegister) increment(data uint8) {
 	if addr > 0x3fff {
 		addr = addr & 0b11_1111_1111_1111
 	}
-}
-
-func (ar *AddrRegister) resetLatch() {
-	ar.loPtr = false
 }

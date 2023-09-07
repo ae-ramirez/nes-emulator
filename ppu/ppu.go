@@ -20,8 +20,11 @@ type PPU struct {
 	status     statusRegister  // 0x2002
 	oamAddr    OAMAddrRegister // 0x2003
 	oamDataReg OAMDataRegister // 0x2004
+	scroll     scrollRegister  // 0x2005
 	addr       AddrRegister    // 0x2006
 
+	// internal register
+	w_latch bool
 }
 
 func (ppu *PPU) Init(chrRom []uint8, mirroring rom.Mirroring) {
@@ -29,8 +32,13 @@ func (ppu *PPU) Init(chrRom []uint8, mirroring rom.Mirroring) {
 	ppu.mirroring = mirroring
 }
 
+func (ppu *PPU) resetLatch() {
+	ppu.w_latch = false
+}
+
 func (ppu *PPU) WriteToPPUAddress(value uint8) {
-	ppu.addr.update(value)
+	ppu.addr.update(value, ppu.w_latch)
+	ppu.w_latch = !ppu.w_latch
 }
 
 func (ppu *PPU) WriteToControl(value uint8) {
@@ -42,7 +50,7 @@ func (ppu *PPU) WriteToMask(value uint8) {
 }
 
 func (ppu *PPU) ReadStatus() uint8 {
-	ppu.addr.resetLatch()
+	ppu.resetLatch()
 	return ppu.status.read()
 }
 
@@ -57,6 +65,11 @@ func (ppu *PPU) WriteToOAMData(value uint8) {
 
 func (ppu *PPU) ReadOAMData() uint8 {
 	return ppu.oamData[ppu.oamAddr.read()]
+}
+
+func (ppu *PPU) WriteToScroll(value uint8) {
+	ppu.scroll.write(value, ppu.w_latch)
+	ppu.w_latch = !ppu.w_latch
 }
 
 func (ppu *PPU) WriteToData(value uint8) {
