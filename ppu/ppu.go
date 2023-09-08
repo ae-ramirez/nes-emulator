@@ -25,11 +25,37 @@ type PPU struct {
 
 	// internal register
 	w_latch bool
+
+	scanline uint16
+	cycles uint
 }
 
 func (ppu *PPU) Init(chrRom []uint8, mirroring rom.Mirroring) {
 	ppu.chrRom = chrRom
 	ppu.mirroring = mirroring
+}
+
+func (ppu *PPU) Tick(cycles uint8) bool {
+	ppu.cycles += uint(cycles)
+
+	if ppu.cycles >= 341 {
+		ppu.cycles = ppu.cycles - 341
+		ppu.scanline += 1
+	}
+
+	if ppu.scanline == 241 {
+		if ppu.control.isFlagSet(GenerateNMI) {
+			ppu.status.setFlag(VerticalBlank, true)
+			// TODO: create trigger NMI interrupt
+		}
+	}
+
+	if ppu.scanline >= 262 {
+		ppu.scanline = 0
+		ppu.status.setFlag(VerticalBlank, false)
+		return true
+	}
+	return false
 }
 
 func (ppu *PPU) resetLatch() {

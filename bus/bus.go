@@ -10,6 +10,8 @@ type Bus struct {
 	cpuRam [2048]uint8
 	prgRom []uint8
 	ppu    ppu.PPU
+
+	cycles uint
 }
 
 // Mapped memory locations
@@ -25,6 +27,11 @@ const (
 	ROM_PROGRAM                      = 0x8000
 	ROM_PROGRAM_END                  = 0xffff
 )
+
+func (bus *Bus) Tick(cycles uint8) {
+	bus.cycles += uint(cycles)
+	bus.ppu.Tick(cycles * 3)
+}
 
 func (bus *Bus) SetRom(rom *rom.Rom) {
 	bus.ppu.Init(rom.ChrRom, rom.ScreenMirroring)

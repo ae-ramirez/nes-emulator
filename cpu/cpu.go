@@ -284,6 +284,8 @@ func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 			panic(fmt.Errorf("Unsupported opcode: %#02x", code))
 		}
 
+		cpu.Bus.Tick(opcode.cycles)
+
 		// A branch didn't occur
 		if curr_program_counter == cpu.programCounter {
 			cpu.programCounter += uint16(opcode.len) - 1

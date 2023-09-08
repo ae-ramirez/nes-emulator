@@ -16,12 +16,12 @@ const (
 	GenerateNMI
 )
 
-func (cr controlRegister) hasFlag(flag controlRegisterFlag) bool {
+func (cr controlRegister) isFlagSet(flag controlRegisterFlag) bool {
 	return uint8(cr)&uint8(flag) != 0
 }
 
 func (cr controlRegister) getvramAdressIncrementSize() uint8 {
-	if cr.hasFlag(VramAddIncrement) {
+	if cr.isFlagSet(VramAddIncrement) {
 		return 1
 	} else {
 		return 32
@@ -73,6 +73,14 @@ const (
 
 func (sr statusRegister) read() uint8 {
 	return uint8(sr)
+}
+
+func (sr *statusRegister) setFlag(flag statusRegisterFlag, set bool) {
+	if set {
+		*sr |= statusRegister(flag)
+	} else {
+		*sr &= ^statusRegister(flag)
+	}
 }
 
 // OAMAddrRegister is the OAM address register (0x2003).
