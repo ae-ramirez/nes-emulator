@@ -263,6 +263,8 @@ func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 			cpu.registerX = cpu.registerA
 		case 0x87, 0x97, 0x83, 0x8f:
 			cpu.sax(opcode.mode)
+		case 0xc7, 0xd7, 0xcf, 0xdf, 0xdb, 0xc3, 0xd3:
+			cpu.dcp(opcode.mode)
 		default:
 			panic(fmt.Errorf("Unsupported opcode: %#02x", code))
 		}

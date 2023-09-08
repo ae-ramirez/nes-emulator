@@ -270,6 +270,14 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x8F, "*SAX", 3, 4, Absolute),
 
 		newOpCode(0xeb, "*SBC", 2, 2, Immediate),
+
+		newOpCode(0xc7, "*DCP", 2, 5, ZeroPage),
+		newOpCode(0xd7, "*DCP", 2, 6, ZeroPage_X),
+		newOpCode(0xcf, "*DCP", 3, 6, Absolute),
+		newOpCode(0xdf, "*DCP", 3, 7, Absolute_X),
+		newOpCode(0xdb, "*DCP", 3, 7, Absolute_Y),
+		newOpCode(0xc3, "*DCP", 2, 8, Indirect_X),
+		newOpCode(0xd3, "*DCP", 2, 8, Indirect_Y),
 	}
 
 	return func() map[uint8]*OpCode {
@@ -735,4 +743,9 @@ func (cpu *CPU) sax(mode AddressingMode) {
 	val := cpu.registerA & cpu.registerX
 
 	cpu.MemWrite(addr, val)
+}
+
+func (cpu *CPU) dcp(mode AddressingMode) {
+	cpu.dec(mode)
+	cpu.cmp(mode)
 }
