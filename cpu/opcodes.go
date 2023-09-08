@@ -278,6 +278,14 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0xdb, "*DCP", 3, 7, Absolute_Y),
 		newOpCode(0xc3, "*DCP", 2, 8, Indirect_X),
 		newOpCode(0xd3, "*DCP", 2, 8, Indirect_Y),
+
+		newOpCode(0xe7, "*ISB", 2, 5, ZeroPage),
+		newOpCode(0xf7, "*ISB", 2, 6, ZeroPage_X),
+		newOpCode(0xef, "*ISB", 3, 6, Absolute),
+		newOpCode(0xff, "*ISB", 3, 7, Absolute_X),
+		newOpCode(0xfb, "*ISB", 3, 7, Absolute_Y),
+		newOpCode(0xe3, "*ISB", 2, 8, Indirect_X),
+		newOpCode(0xf3, "*ISB", 2, 8, Indirect_Y),
 	}
 
 	return func() map[uint8]*OpCode {
