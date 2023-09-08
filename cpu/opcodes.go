@@ -256,6 +256,18 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x7c, "*NOP", 3, 4, Absolute_X),
 		newOpCode(0xdc, "*NOP", 3, 4, Absolute_X),
 		newOpCode(0xfc, "*NOP", 3, 4, Absolute_X),
+
+		newOpCode(0xa7, "*LAX", 2, 3, ZeroPage),
+		newOpCode(0xb7, "*LAX", 2, 4, ZeroPage_Y),
+		newOpCode(0xaf, "*LAX", 3, 4, Absolute),
+		newOpCode(0xbf, "*LAX", 3, 4, Absolute_Y),
+		newOpCode(0xa3, "*LAX", 2, 6, Indirect_X),
+		newOpCode(0xb3, "*LAX", 2, 5, Indirect_Y),
+
+		newOpCode(0x87, "*SAX", 2, 3, ZeroPage),
+		newOpCode(0x97, "*SAX", 2, 4, ZeroPage_Y),
+		newOpCode(0x83, "*SAX", 2, 6, Indirect_X),
+		newOpCode(0x8F, "*SAX", 3, 4, Absolute),
 	}
 
 	return func() map[uint8]*OpCode {
@@ -712,4 +724,13 @@ func (cpu *CPU) txs() {
 func (cpu *CPU) tya() {
 	cpu.registerA = cpu.registerY
 	cpu.updateZeroAndNegativeFlags(cpu.registerA)
+}
+
+// unofficial opcodes
+
+func (cpu *CPU) sax(mode AddressingMode) {
+	addr := cpu.getOperandAddress(mode)
+	val := cpu.registerA & cpu.registerX
+
+	cpu.Bus.MemWrite(addr, val)
 }
