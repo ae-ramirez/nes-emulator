@@ -286,6 +286,38 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0xfb, "*ISB", 3, 7, Absolute_Y),
 		newOpCode(0xe3, "*ISB", 2, 8, Indirect_X),
 		newOpCode(0xf3, "*ISB", 2, 8, Indirect_Y),
+
+		newOpCode(0x07, "*SLO", 2, 5, ZeroPage),
+		newOpCode(0x17, "*SLO", 2, 6, ZeroPage_X),
+		newOpCode(0x0f, "*SLO", 3, 6, Absolute),
+		newOpCode(0x1f, "*SLO", 3, 7, Absolute_X),
+		newOpCode(0x1b, "*SLO", 3, 7, Absolute_Y),
+		newOpCode(0x03, "*SLO", 2, 8, Indirect_X),
+		newOpCode(0x13, "*SLO", 2, 8, Indirect_Y),
+
+		newOpCode(0x27, "*RLA", 2, 5, ZeroPage),
+		newOpCode(0x37, "*RLA", 2, 6, ZeroPage_X),
+		newOpCode(0x2f, "*RLA", 3, 6, Absolute),
+		newOpCode(0x3f, "*RLA", 3, 7, Absolute_X),
+		newOpCode(0x3b, "*RLA", 3, 7, Absolute_Y),
+		newOpCode(0x23, "*RLA", 2, 8, Indirect_X),
+		newOpCode(0x33, "*RLA", 2, 8, Indirect_Y),
+
+		newOpCode(0x47, "*SRE", 2, 5, ZeroPage),
+		newOpCode(0x57, "*SRE", 2, 6, ZeroPage_X),
+		newOpCode(0x4f, "*SRE", 3, 6, Absolute),
+		newOpCode(0x5f, "*SRE", 3, 7, Absolute_X),
+		newOpCode(0x5b, "*SRE", 3, 7, Absolute_Y),
+		newOpCode(0x43, "*SRE", 2, 8, Indirect_X),
+		newOpCode(0x53, "*SRE", 2, 8, Indirect_Y),
+
+		newOpCode(0x67, "*RRA", 2, 5, ZeroPage),
+		newOpCode(0x77, "*RRA", 2, 6, ZeroPage_X),
+		newOpCode(0x6f, "*RRA", 3, 6, Absolute),
+		newOpCode(0x7f, "*RRA", 3, 7, Absolute_X),
+		newOpCode(0x7b, "*RRA", 3, 7, Absolute_Y),
+		newOpCode(0x63, "*RRA", 2, 8, Indirect_X),
+		newOpCode(0x73, "*RRA", 2, 8, Indirect_Y),
 	}
 
 	return func() map[uint8]*OpCode {
