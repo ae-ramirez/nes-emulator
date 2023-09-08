@@ -206,9 +206,10 @@ func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 			cpu.ldy(opcode.mode)
 		case 0x4a, 0x46, 0x56, 0x4e, 0x5e:
 			cpu.lsr(opcode.mode)
-		case 0xea:
+		case 0xea, 0x04, 0x14, 0x34, 0x44, 0x54, 0x64, 0x74, 0x80, 0x82,
+			0x89, 0xc2, 0xd4, 0xe2, 0xf4, 0x0c, 0x1c, 0x3c, 0x5c, 0x7c,
+			0xdc, 0xfc, 0x1a, 0x3a, 0x5a, 0x7a, 0xda, 0xfa:
 			// nop
-			break
 		case 0x09, 0x05, 0x15, 0x0d, 0x1d, 0x19, 0x01, 0x11:
 			cpu.ora(opcode.mode)
 		case 0x48:
@@ -276,14 +277,18 @@ func Trace(c *CPU) string {
 	sb.WriteString(fmt.Sprintf("%02X ", code))
 
 	if opcode.len == 1 {
-		sb.WriteString("       ")
+		sb.WriteString("      ")
 	} else if opcode.len == 2 {
-		sb.WriteString(fmt.Sprintf("%02X     ", c.MemRead(c.programCounter+1)))
+		sb.WriteString(fmt.Sprintf("%02X    ", c.MemRead(c.programCounter+1)))
 	} else {
-		sb.WriteString(fmt.Sprintf("%02X %02X  ", c.MemRead(c.programCounter+1), c.MemRead(c.programCounter+2)))
+		sb.WriteString(fmt.Sprintf("%02X %02X ", c.MemRead(c.programCounter+1), c.MemRead(c.programCounter+2)))
 	}
 
-	sb.WriteString(c.OpcodeToAssembly(opcode))
+	opcodeString := c.OpcodeToAssembly(opcode)
+	if opcodeString[0] != '*' {
+		sb.WriteString(" ")
+	}
+	sb.WriteString(opcodeString)
 	sb.WriteString(strings.Repeat(" ", 48-sb.Len()))
 
 	sb.WriteString(fmt.Sprintf("A:%02X X:%02X Y:%02X P:%02X SP:%02X", c.registerA, c.registerX, c.registerY, c.status, c.stackPointer))
