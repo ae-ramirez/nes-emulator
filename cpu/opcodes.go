@@ -268,6 +268,8 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0x97, "*SAX", 2, 4, ZeroPage_Y),
 		newOpCode(0x83, "*SAX", 2, 6, Indirect_X),
 		newOpCode(0x8F, "*SAX", 3, 4, Absolute),
+
+		newOpCode(0xeb, "*SBC", 2, 2, Immediate),
 	}
 
 	return func() map[uint8]*OpCode {
@@ -732,5 +734,5 @@ func (cpu *CPU) sax(mode AddressingMode) {
 	addr := cpu.getOperandAddress(mode)
 	val := cpu.registerA & cpu.registerX
 
-	cpu.Bus.MemWrite(addr, val)
+	cpu.MemWrite(addr, val)
 }
