@@ -320,14 +320,11 @@ func (c *CPU) OpcodeToAssembly(opcode *OpCode) string {
 	if opcode.code == 0x6c { // indirect jump
 		sb.WriteString(fmt.Sprintf("($%04X) = %04X", addr, c.getJmpIndirectAdress(addr)))
 	} else if opcode.code == 0x90 || // branching instructions
-		opcode.code == 0xb0 ||
-		opcode.code == 0xf0 ||
-		opcode.code == 0x30 ||
-		opcode.code == 0xd0 ||
-		opcode.code == 0x10 ||
-		opcode.code == 0x50 ||
+		opcode.code == 0xb0 || opcode.code == 0xf0 ||
+		opcode.code == 0x30 || opcode.code == 0xd0 ||
+		opcode.code == 0x10 || opcode.code == 0x50 ||
 		opcode.code == 0x70 {
-		sb.WriteString(fmt.Sprintf("$%04X", uint16(c.MemRead(addr))+c.programCounter+2))
+		sb.WriteString(fmt.Sprintf("$%04X", uint16(int8(c.MemRead(addr)))+uint16(c.programCounter)+2))
 	} else if opcode.mode == Immediate {
 		sb.WriteString(fmt.Sprintf("#$%02X", c.MemRead(addr)))
 	} else if opcode.mode == ZeroPage {
