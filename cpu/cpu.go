@@ -317,7 +317,7 @@ func Trace(c *CPU) string {
 	sb.WriteString(opcodeString)
 	sb.WriteString(strings.Repeat(" ", 48-sb.Len()))
 
-	sb.WriteString(fmt.Sprintf("A:%02X X:%02X Y:%02X P:%02X SP:%02X", c.registerA, c.registerX, c.registerY, c.status, c.stackPointer))
+	sb.WriteString(fmt.Sprintf("A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%d", c.registerA, c.registerX, c.registerY, c.status, c.stackPointer, c.Bus.GetCycles()))
 
 	return sb.String()
 }

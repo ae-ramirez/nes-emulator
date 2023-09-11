@@ -33,7 +33,12 @@ func (bus *Bus) Tick(cycles uint8) {
 	bus.ppu.Tick(cycles * 3)
 }
 
+func (bus *Bus) GetCycles() uint {
+	return bus.cycles
+}
+
 func (bus *Bus) SetRom(rom *rom.Rom) {
+	bus.cycles = 7
 	bus.ppu.Init(rom.ChrRom, rom.ScreenMirroring)
 	bus.prgRom = rom.PrgRom
 }
