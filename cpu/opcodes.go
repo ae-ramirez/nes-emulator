@@ -335,43 +335,49 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 
 var OpCodes = OpCodesMapFunc()
 
-func (cpu *CPU) getOperandAddress(mode AddressingMode) uint16 {
+// getOperandAddress returns an adress (uint16) calculated according to the
+// addressing mode specified. The bool value returns whether two different
+// memory pages would have been accessed when calculating the address.
+func (cpu *CPU) getOperandAddress(mode AddressingMode) (uint16, bool) {
 	switch mode {
 	case Immediate:
-		return cpu.programCounter
+		return cpu.programCounter, false
 	case ZeroPage:
-		return uint16(cpu.MemRead(cpu.programCounter))
+		return uint16(cpu.MemRead(cpu.programCounter)), false
 	case Absolute:
-		return cpu.MemRead_u16(cpu.programCounter)
+		return cpu.MemRead_u16(cpu.programCounter), false
 	case ZeroPage_X:
 		pos := cpu.MemRead(cpu.programCounter)
 		addr := uint16(pos + cpu.registerX)
-		return addr
+		return addr, false
 	case ZeroPage_Y:
 		pos := cpu.MemRead(cpu.programCounter)
 		addr := uint16(pos + cpu.registerY)
-		return addr
+		return addr, false
 	case Absolute_X:
 		base := cpu.MemRead_u16(cpu.programCounter)
 		addr := base + uint16(cpu.registerX)
-		return addr
+		return addr, base>>8 != addr>>8
 	case Absolute_Y:
 		base := cpu.MemRead_u16(cpu.programCounter)
 		addr := base + uint16(cpu.registerY)
-		return addr
+		if cpu.programCounter == 0xdf60 {
+			fmt.Printf("base: %d\naddr: %d\n", base, addr)
+		}
+		return addr, base>>8 != addr>>8
 	case Indirect_X:
 		base := cpu.MemRead(cpu.programCounter)
 		ptr := base + cpu.registerX
 		lo := cpu.MemRead(uint16(ptr))
 		ptr += 1
 		hi := cpu.MemRead(uint16(ptr))
-		return (uint16(hi))<<8 | uint16(lo)
+		return (uint16(hi))<<8 | uint16(lo), false
 	case Indirect_Y:
 		base := cpu.MemRead(cpu.programCounter)
 		lo := uint16(cpu.MemRead(uint16(base)))
 		hi := uint16(cpu.MemRead(uint16(base + 1)))
 		deref_base := (hi << 8) | lo
-		return deref_base + uint16(cpu.registerY)
+		return deref_base + uint16(cpu.registerY), uint8(deref_base) != cpu.registerY
 	default:
 		panic(fmt.Errorf("mode %#v is not supported", mode))
 	}
@@ -399,7 +405,7 @@ func (cpu *CPU) isStatusFlagClear(mask uint8) bool {
 }
 
 func (cpu *CPU) adc(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 
 	sum := uint16(cpu.registerA) + uint16(val)
@@ -418,7 +424,7 @@ func (cpu *CPU) adc(mode AddressingMode) {
 }
 
 func (cpu *CPU) and(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 
 	cpu.registerA = cpu.registerA & val
@@ -435,7 +441,7 @@ func (cpu *CPU) asl(mode AddressingMode) {
 		val = val << 1
 		cpu.registerA = val
 	} else {
-		addr := cpu.getOperandAddress(mode)
+		addr, _ := cpu.getOperandAddress(mode)
 		val = cpu.MemRead(addr)
 		cpu.setStatusFlag(CarryFlag, val>>7 == 1)
 
@@ -447,7 +453,7 @@ func (cpu *CPU) asl(mode AddressingMode) {
 }
 
 func (cpu *CPU) bit(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 
 	cpu.setStatusFlag(NegativeFlag, val&0b1000_0000 != 0)
@@ -496,7 +502,7 @@ func (cpu *CPU) clv() {
 }
 
 func (cpu *CPU) cmp(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 
 	cpu.setStatusFlag(CarryFlag, cpu.registerA >= val)
@@ -505,7 +511,7 @@ func (cpu *CPU) cmp(mode AddressingMode) {
 }
 
 func (cpu *CPU) cpx(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 
 	cpu.setStatusFlag(CarryFlag, cpu.registerX >= val)
@@ -514,7 +520,7 @@ func (cpu *CPU) cpx(mode AddressingMode) {
 }
 
 func (cpu *CPU) cpy(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 
 	cpu.setStatusFlag(CarryFlag, cpu.registerY >= val)
@@ -523,7 +529,7 @@ func (cpu *CPU) cpy(mode AddressingMode) {
 }
 
 func (cpu *CPU) dec(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr) - 1
 	cpu.MemWrite(addr, val)
 
@@ -541,7 +547,7 @@ func (cpu *CPU) dey() {
 }
 
 func (cpu *CPU) eor(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 	cpu.registerA ^= val
 
@@ -549,7 +555,7 @@ func (cpu *CPU) eor(mode AddressingMode) {
 }
 
 func (cpu *CPU) inc(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr) + 1
 	cpu.MemWrite(addr, val)
 
@@ -595,19 +601,19 @@ func (cpu *CPU) jsr(mode AddressingMode) {
 }
 
 func (cpu *CPU) lda(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	cpu.registerA = cpu.MemRead(addr)
 	cpu.updateZeroAndNegativeFlags(cpu.registerA)
 }
 
 func (cpu *CPU) ldx(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	cpu.registerX = cpu.MemRead(addr)
 	cpu.updateZeroAndNegativeFlags(cpu.registerX)
 }
 
 func (cpu *CPU) ldy(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	cpu.registerY = cpu.MemRead(addr)
 	cpu.updateZeroAndNegativeFlags(cpu.registerY)
 }
@@ -621,7 +627,7 @@ func (cpu *CPU) lsr(mode AddressingMode) {
 		val >>= 1
 		cpu.registerA = val
 	} else {
-		addr := cpu.getOperandAddress(mode)
+		addr, _ := cpu.getOperandAddress(mode)
 		val = cpu.MemRead(addr)
 		cpu.setStatusFlag(CarryFlag, val&0b0000_0001 != 0)
 		val >>= 1
@@ -632,7 +638,7 @@ func (cpu *CPU) lsr(mode AddressingMode) {
 }
 
 func (cpu *CPU) ora(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 	cpu.registerA |= val
 
@@ -666,7 +672,7 @@ func (cpu *CPU) rol(mode AddressingMode) {
 		cpu.registerA |= cpu.status & CarryFlag
 		val = cpu.registerA
 	} else {
-		addr := cpu.getOperandAddress(mode)
+		addr, _ := cpu.getOperandAddress(mode)
 		val = cpu.MemRead(addr)
 		setCarryFlag = val&0b1000_0000 != 0
 		val <<= 1
@@ -688,7 +694,7 @@ func (cpu *CPU) ror(mode AddressingMode) {
 		cpu.registerA |= (cpu.status & CarryFlag) << 7
 		val = cpu.registerA
 	} else {
-		addr := cpu.getOperandAddress(mode)
+		addr, _ := cpu.getOperandAddress(mode)
 		val = cpu.MemRead(addr)
 		setCarryFlag = val&0b0000_0001 != 0
 		val >>= 1
@@ -710,7 +716,7 @@ func (cpu *CPU) rts() {
 }
 
 func (cpu *CPU) sbc(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.MemRead(addr)
 	val = ^val
 
@@ -742,17 +748,17 @@ func (cpu *CPU) sei() {
 }
 
 func (cpu *CPU) sta(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	cpu.MemWrite(addr, cpu.registerA)
 }
 
 func (cpu *CPU) stx(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	cpu.MemWrite(addr, cpu.registerX)
 }
 
 func (cpu *CPU) sty(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	cpu.MemWrite(addr, cpu.registerY)
 }
 
@@ -788,7 +794,7 @@ func (cpu *CPU) tya() {
 // unofficial opcodes
 
 func (cpu *CPU) sax(mode AddressingMode) {
-	addr := cpu.getOperandAddress(mode)
+	addr, _ := cpu.getOperandAddress(mode)
 	val := cpu.registerA & cpu.registerX
 
 	cpu.MemWrite(addr, val)

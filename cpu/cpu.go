@@ -350,7 +350,7 @@ func (c *CPU) OpcodeToAssembly(opcode *OpCode) string {
 
 	var addr uint16
 	c.programCounter += 1
-	addr = c.getOperandAddress(opcode.mode)
+	addr, _ = c.getOperandAddress(opcode.mode)
 	c.programCounter -= 1
 
 	if opcode.code == 0x6c { // indirect jump
