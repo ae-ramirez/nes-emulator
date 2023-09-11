@@ -122,8 +122,10 @@ func (cpu *CPU) Run() {
 func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 	opcodes := cpu.opcodes()
 	var curr_program_counter uint16
+	var extraCycles uint8
 	for {
 		callback(cpu)
+		extraCycles = 0
 
 		code := cpu.MemRead(cpu.programCounter)
 		cpu.programCounter += 1
@@ -140,30 +142,30 @@ func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 			cpu.asl(opcode.mode)
 		case 0x90:
 			// bcc
-			cpu.branch(cpu.isStatusFlagClear(CarryFlag))
+			extraCycles = cpu.branch(cpu.isStatusFlagClear(CarryFlag))
 		case 0xb0:
 			// bcs
-			cpu.branch(cpu.isStatusFlagSet(CarryFlag))
+			extraCycles = cpu.branch(cpu.isStatusFlagSet(CarryFlag))
 		case 0xf0:
 			// beq
-			cpu.branch(cpu.isStatusFlagSet(ZeroFlag))
+			extraCycles = cpu.branch(cpu.isStatusFlagSet(ZeroFlag))
 		case 0x24, 0x2c:
 			cpu.bit(opcode.mode)
 		case 0x30:
 			// bmi
-			cpu.branch(cpu.isStatusFlagSet(NegativeFlag))
+			extraCycles = cpu.branch(cpu.isStatusFlagSet(NegativeFlag))
 		case 0xd0:
 			// bne
-			cpu.branch(cpu.isStatusFlagClear(ZeroFlag))
+			extraCycles = cpu.branch(cpu.isStatusFlagClear(ZeroFlag))
 		case 0x10:
 			// bpl
-			cpu.branch(cpu.isStatusFlagClear(NegativeFlag))
+			extraCycles = cpu.branch(cpu.isStatusFlagClear(NegativeFlag))
 		case 0x50:
 			// bvc
-			cpu.branch(cpu.isStatusFlagClear(OverflowFlag))
+			extraCycles = cpu.branch(cpu.isStatusFlagClear(OverflowFlag))
 		case 0x70:
 			// bvs
-			cpu.branch(cpu.isStatusFlagSet(OverflowFlag))
+			extraCycles = cpu.branch(cpu.isStatusFlagSet(OverflowFlag))
 		case 0x18:
 			cpu.clc()
 		case 0xd8:
@@ -285,6 +287,7 @@ func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 		}
 
 		cpu.Bus.Tick(opcode.cycles)
+		cpu.Bus.Tick(extraCycles)
 
 		// A branch didn't occur
 		if curr_program_counter == cpu.programCounter {

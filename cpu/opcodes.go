@@ -455,10 +455,19 @@ func (cpu *CPU) bit(mode AddressingMode) {
 	cpu.setStatusFlag(ZeroFlag, val&cpu.registerA == 0)
 }
 
-func (cpu *CPU) branch(shouldBranch bool) {
-	if shouldBranch {
-		displacement := int8(cpu.MemRead(cpu.programCounter))
-		cpu.programCounter += uint16(displacement) + 1
+func (cpu *CPU) branch(shouldBranch bool) uint8 {
+	if !shouldBranch {
+		return 0
+	}
+
+	oldProgramCounter := cpu.programCounter + 2
+	displacement := int8(cpu.MemRead(cpu.programCounter))
+	cpu.programCounter += uint16(displacement) + 1
+
+	if oldProgramCounter>>8 == cpu.programCounter>>8 {
+		return 1
+	} else {
+		return 2
 	}
 }
 
