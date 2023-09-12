@@ -250,19 +250,19 @@ func OpCodesMapFunc() func() map[uint8]*OpCode {
 		newOpCode(0xe2, "*NOP", 2, 2, Immediate),
 		newOpCode(0xf4, "*NOP", 2, 4, ZeroPage_X),
 		newOpCode(0x0c, "*NOP", 3, 4, Absolute),
-		newOpCode(0x1c, "*NOP", 3, 4, Absolute_X),
-		newOpCode(0x3c, "*NOP", 3, 4, Absolute_X),
-		newOpCode(0x5c, "*NOP", 3, 4, Absolute_X),
-		newOpCode(0x7c, "*NOP", 3, 4, Absolute_X),
-		newOpCode(0xdc, "*NOP", 3, 4, Absolute_X),
-		newOpCode(0xfc, "*NOP", 3, 4, Absolute_X),
+		newOpCode(0x1c, "*NOP", 3, 4 /* +1 if page crossed */, Absolute_X),
+		newOpCode(0x3c, "*NOP", 3, 4 /* +1 if page crossed */, Absolute_X),
+		newOpCode(0x5c, "*NOP", 3, 4 /* +1 if page crossed */, Absolute_X),
+		newOpCode(0x7c, "*NOP", 3, 4 /* +1 if page crossed */, Absolute_X),
+		newOpCode(0xdc, "*NOP", 3, 4 /* +1 if page crossed */, Absolute_X),
+		newOpCode(0xfc, "*NOP", 3, 4 /* +1 if page crossed */, Absolute_X),
 
 		newOpCode(0xa7, "*LAX", 2, 3, ZeroPage),
 		newOpCode(0xb7, "*LAX", 2, 4, ZeroPage_Y),
 		newOpCode(0xaf, "*LAX", 3, 4, Absolute),
-		newOpCode(0xbf, "*LAX", 3, 4, Absolute_Y),
+		newOpCode(0xbf, "*LAX", 3, 4 /* +1 if page crossed */, Absolute_Y),
 		newOpCode(0xa3, "*LAX", 2, 6, Indirect_X),
-		newOpCode(0xb3, "*LAX", 2, 5, Indirect_Y),
+		newOpCode(0xb3, "*LAX", 2, 5 /* +1 if page crossed */, Indirect_Y),
 
 		newOpCode(0x87, "*SAX", 2, 3, ZeroPage),
 		newOpCode(0x97, "*SAX", 2, 4, ZeroPage_Y),
@@ -377,7 +377,8 @@ func (cpu *CPU) getOperandAddress(mode AddressingMode) (uint16, bool) {
 		lo := uint16(cpu.MemRead(uint16(base)))
 		hi := uint16(cpu.MemRead(uint16(base + 1)))
 		deref_base := (hi << 8) | lo
-		return deref_base + uint16(cpu.registerY), uint8(deref_base) != cpu.registerY
+		addr := deref_base + uint16(cpu.registerY)
+		return deref_base + uint16(cpu.registerY), deref_base>>8 != addr>>8
 	default:
 		panic(fmt.Errorf("mode %#v is not supported", mode))
 	}
@@ -600,22 +601,41 @@ func (cpu *CPU) jsr(mode AddressingMode) {
 	cpu.programCounter = addr
 }
 
-func (cpu *CPU) lda(mode AddressingMode) {
-	addr, _ := cpu.getOperandAddress(mode)
+func (cpu *CPU) lda(mode AddressingMode) uint8 {
+	addr, pageCrossed := cpu.getOperandAddress(mode)
 	cpu.registerA = cpu.MemRead(addr)
 	cpu.updateZeroAndNegativeFlags(cpu.registerA)
+
+	if (mode == Absolute_X || mode == Absolute_Y || mode == Indirect_Y) &&
+		pageCrossed {
+		return 1
+	} else {
+		return 0
+	}
 }
 
-func (cpu *CPU) ldx(mode AddressingMode) {
-	addr, _ := cpu.getOperandAddress(mode)
+func (cpu *CPU) ldx(mode AddressingMode) uint8 {
+	addr, pageCrossed := cpu.getOperandAddress(mode)
 	cpu.registerX = cpu.MemRead(addr)
 	cpu.updateZeroAndNegativeFlags(cpu.registerX)
+
+	if mode == Absolute_Y && pageCrossed {
+		return 1
+	} else {
+		return 0
+	}
 }
 
-func (cpu *CPU) ldy(mode AddressingMode) {
-	addr, _ := cpu.getOperandAddress(mode)
+func (cpu *CPU) ldy(mode AddressingMode) uint8 {
+	addr, pageCrossed := cpu.getOperandAddress(mode)
 	cpu.registerY = cpu.MemRead(addr)
 	cpu.updateZeroAndNegativeFlags(cpu.registerY)
+
+	if mode == Absolute_X && pageCrossed {
+		return 1
+	} else {
+		return 0
+	}
 }
 
 func (cpu *CPU) lsr(mode AddressingMode) {
