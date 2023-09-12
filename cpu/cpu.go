@@ -126,6 +126,10 @@ func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 	var extraCycles uint8
 
 	for {
+		if cpu.Bus.PollNMIStatus() {
+			cpu.interruptNMI()
+		}
+
 		callback(cpu)
 
 		code := cpu.MemRead(cpu.programCounter)
@@ -145,6 +149,15 @@ func (cpu *CPU) RunWithCallback(callback func(*CPU)) {
 
 		cpu.programCounter += uint16(opcode.len) - 1
 	}
+}
+
+func (cpu *CPU) interruptNMI() {
+	cpu.stackPush_u16(cpu.programCounter)
+	cpu.stackPush(cpu.status | 0b0010_0000)
+
+	cpu.setStatusFlag(InterruptDisableFlag, true)
+	cpu.Bus.Tick(2)
+	cpu.programCounter = cpu.MemRead_u16(0xfffa)
 }
 
 func (cpu *CPU) execOp(opcode *OpCode, code uint8) uint8 {

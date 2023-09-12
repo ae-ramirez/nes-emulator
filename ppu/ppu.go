@@ -27,7 +27,9 @@ type PPU struct {
 	w_latch bool
 
 	scanline uint16
-	cycles uint
+	cycles   uint
+
+	interruptNMI bool
 }
 
 func (ppu *PPU) Init(chrRom []uint8, mirroring rom.Mirroring) {
@@ -46,7 +48,7 @@ func (ppu *PPU) Tick(cycles uint8) bool {
 	if ppu.scanline == 241 {
 		if ppu.control.isFlagSet(GenerateNMI) {
 			ppu.status.setFlag(VerticalBlank, true)
-			// TODO: create trigger NMI interrupt
+			ppu.triggerInterruptNMI()
 		}
 	}
 
@@ -62,13 +64,27 @@ func (ppu *PPU) resetLatch() {
 	ppu.w_latch = false
 }
 
+func (ppu *PPU) triggerInterruptNMI() {
+	ppu.interruptNMI = true
+}
+
+func (ppu *PPU) PollInterruptNMI() bool {
+	return ppu.interruptNMI
+}
+
 func (ppu *PPU) WriteToPPUAddress(value uint8) {
 	ppu.addr.update(value, ppu.w_latch)
 	ppu.w_latch = !ppu.w_latch
 }
 
 func (ppu *PPU) WriteToControl(value uint8) {
+	oldNMIStatus := ppu.control.isFlagSet(GenerateNMI)
 	ppu.control.write(value)
+	if oldNMIStatus &&
+		ppu.control.isFlagSet(GenerateNMI) &&
+		ppu.status.isFlagSet(VerticalBlank) {
+		ppu.triggerInterruptNMI()
+	}
 }
 
 func (ppu *PPU) WriteToMask(value uint8) {

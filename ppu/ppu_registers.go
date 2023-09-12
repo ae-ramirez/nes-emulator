@@ -75,6 +75,10 @@ func (sr statusRegister) read() uint8 {
 	return uint8(sr)
 }
 
+func (sr statusRegister) isFlagSet(flag statusRegisterFlag) bool {
+	return uint8(sr)&uint8(flag) != 0
+}
+
 func (sr *statusRegister) setFlag(flag statusRegisterFlag, set bool) {
 	if set {
 		*sr |= statusRegister(flag)

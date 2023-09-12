@@ -33,6 +33,10 @@ func (bus *Bus) Tick(cycles uint8) {
 	bus.ppu.Tick(cycles * 3)
 }
 
+func (bus *Bus) PollNMIStatus() bool {
+	return bus.ppu.PollInterruptNMI()
+}
+
 func (bus *Bus) GetCycles() uint {
 	return bus.cycles
 }
