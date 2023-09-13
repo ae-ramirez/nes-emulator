@@ -19,7 +19,6 @@ type PPU struct {
 	mask       maskRegister    // 0x2001
 	status     statusRegister  // 0x2002
 	oamAddr    OAMAddrRegister // 0x2003
-	oamDataReg OAMDataRegister // 0x2004
 	scroll     scrollRegister  // 0x2005
 	addr       AddrRegister    // 0x2006
 
@@ -101,8 +100,8 @@ func (ppu *PPU) WriteToOAMAddress(value uint8) {
 }
 
 func (ppu *PPU) WriteToOAMData(value uint8) {
+	ppu.oamData[ppu.oamAddr.read()] = value
 	ppu.oamAddr.incremenmt()
-	ppu.oamDataReg.write(value)
 }
 
 func (ppu *PPU) ReadOAMData() uint8 {

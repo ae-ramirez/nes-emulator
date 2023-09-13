@@ -90,23 +90,16 @@ func (sr *statusRegister) setFlag(flag statusRegisterFlag, set bool) {
 // OAMAddrRegister is the OAM address register (0x2003).
 type OAMAddrRegister uint8
 
+func (odr OAMAddrRegister) read() uint8 {
+	return uint8(odr)
+}
+
 func (oar *OAMAddrRegister) write(data uint8) {
 	*oar = OAMAddrRegister(data)
 }
 
 func (oar *OAMAddrRegister) incremenmt() {
 	*oar = OAMAddrRegister(uint8(*oar) + 1)
-}
-
-// OAMDataRegister is the OAM data register (0x2004).
-type OAMDataRegister uint8
-
-func (odr OAMAddrRegister) read() uint8 {
-	return uint8(odr)
-}
-
-func (odr *OAMDataRegister) write(data uint8) {
-	*odr = OAMDataRegister(data)
 }
 
 // scrollRegister is the scroll register (0x2005)
