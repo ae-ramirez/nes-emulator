@@ -98,6 +98,9 @@ func (bus *Bus) MemWrite(addr uint16, data uint8) {
 		bus.ppu.WriteToPPUAddress(data)
 	case addr == 0x2007:
 		bus.ppu.WriteToData(data)
+	case addr == 0x4014:
+		baseAddr := uint16(data) << 8
+		bus.copyToOamData(baseAddr)
 	case addr <= PPU_REGISTERS_MIRRORS_END:
 		mirroredAddr := addr & 0b0010_0000_0000_0111
 		bus.MemWrite(mirroredAddr, data)
@@ -131,4 +134,11 @@ func (bus *Bus) writePrgRom(addr uint16, data uint8) {
 		addr = addr % 0x4000
 	}
 	bus.prgRom[addr] = data
+}
+
+func (bus *Bus) copyToOamData(baseAddr uint16) {
+	var i uint16
+	for i = 0; i < 256; i++ {
+		bus.ppu.WriteToOAMData(bus.MemRead(baseAddr + i))
+	}
 }
