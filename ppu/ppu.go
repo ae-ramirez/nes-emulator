@@ -68,7 +68,9 @@ func (ppu *PPU) triggerInterruptNMI() {
 }
 
 func (ppu *PPU) PollInterruptNMI() bool {
-	return ppu.interruptNMI
+	oldInterruptNMI := ppu.interruptNMI
+	ppu.interruptNMI = false
+	return oldInterruptNMI
 }
 
 func (ppu *PPU) WriteToPPUAddress(value uint8) {
