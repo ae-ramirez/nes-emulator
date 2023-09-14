@@ -93,8 +93,10 @@ func (ppu *PPU) WriteToMask(value uint8) {
 }
 
 func (ppu *PPU) ReadStatus() uint8 {
+	currentStatus := ppu.status.read()
+	ppu.status.setFlag(VerticalBlank, false)
 	ppu.resetLatch()
-	return ppu.status.read()
+	return currentStatus
 }
 
 func (ppu *PPU) WriteToOAMAddress(value uint8) {
