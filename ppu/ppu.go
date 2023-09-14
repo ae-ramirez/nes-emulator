@@ -18,12 +18,12 @@ type PPU struct {
 	control    controlRegister // 0x2000
 	mask       maskRegister    // 0x2001
 	status     statusRegister  // 0x2002
-	oamAddr    OAMAddrRegister // 0x2003
 	scroll     scrollRegister  // 0x2005
 	addr       AddrRegister    // 0x2006
 
 	// internal register
 	w_latch bool
+	oamAddr uint8 // 0x2003
 
 	scanline uint16
 	cycles   uint
@@ -100,16 +100,16 @@ func (ppu *PPU) ReadStatus() uint8 {
 }
 
 func (ppu *PPU) WriteToOAMAddress(value uint8) {
-	ppu.oamAddr.write(value)
+	ppu.oamAddr = value
 }
 
 func (ppu *PPU) WriteToOAMData(value uint8) {
-	ppu.oamData[ppu.oamAddr.read()] = value
-	ppu.oamAddr.incremenmt()
+	ppu.oamData[ppu.oamAddr] = value
+	ppu.oamAddr += 1
 }
 
 func (ppu *PPU) ReadOAMData() uint8 {
-	return ppu.oamData[ppu.oamAddr.read()]
+	return ppu.oamData[ppu.oamAddr]
 }
 
 func (ppu *PPU) WriteToScroll(value uint8) {
