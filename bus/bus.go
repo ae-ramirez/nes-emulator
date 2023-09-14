@@ -46,6 +46,10 @@ func (bus *Bus) PollNMIStatus() bool {
 	return bus.Ppu.PollInterruptNMI()
 }
 
+func (bus *Bus) ResetNMIStatus() {
+	bus.Ppu.ResetInterruptNMI()
+}
+
 func (bus *Bus) GetCycles() uint {
 	return bus.cycles
 }
