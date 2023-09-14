@@ -159,7 +159,7 @@ func (ppu *PPU) ReadData() uint8 {
 		result := ppu.internalDataBuffer
 		ppu.internalDataBuffer = ppu.Vram[ppu.vramMirrorAddress(addr)]
 		return result
-	case addr <= 0x3eff:
+	case 0x3000 <= addr && addr <= 0x3eff:
 		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
 	case addr <= 0x3fff:
 		ppu.internalDataBuffer = ppu.paletteTable[addr-0x1000]
@@ -178,7 +178,7 @@ func (ppu *PPU) writeData(data uint8) {
 		ppu.ChrRom[addr] = data
 	case addr <= 0x2fff:
 		ppu.Vram[ppu.vramMirrorAddress(addr)] = data
-	case addr <= 0x3eff:
+	case 0x3000 <= addr && addr <= 0x3eff:
 		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
 	case addr <= 0x3fff:
 		ppu.paletteTable[addr-0x3f00] = data
