@@ -6,7 +6,7 @@ type controlRegister uint8
 type controlRegisterFlag uint8
 
 const (
-	Nametable1 controlRegisterFlag = iota
+	Nametable1 controlRegisterFlag = 1 << iota
 	Nametable2
 	VramAddIncrement
 	SpritePatternAddress
@@ -37,7 +37,7 @@ type maskRegister uint8
 type maskRegisterFlag uint8
 
 const (
-	Greyscale maskRegisterFlag = iota
+	Greyscale maskRegisterFlag = 1 << iota
 	ShowBackgroundInEightLeftmostPixels
 	ShowSpritesInEightLeftmostPixels
 	ShowBackground
@@ -47,7 +47,7 @@ const (
 	EmphasizeBlue
 )
 
-func (mr maskRegister) hasFlag(flag maskRegisterFlag) bool {
+func (mr maskRegister) isFlagSet(flag maskRegisterFlag) bool {
 	return uint8(mr)&uint8(flag) != 0
 }
 
@@ -61,7 +61,7 @@ type statusRegister uint8
 type statusRegisterFlag uint8
 
 const (
-	PPUOpenBus0 statusRegisterFlag = iota
+	PPUOpenBus0 statusRegisterFlag = 1 << iota
 	PPUOpenBus1
 	PPUOpenBus2
 	PPUOpenBus3
@@ -81,9 +81,9 @@ func (sr statusRegister) isFlagSet(flag statusRegisterFlag) bool {
 
 func (sr *statusRegister) setFlag(flag statusRegisterFlag, set bool) {
 	if set {
-		*sr |= statusRegister(flag)
+		*sr = *sr | statusRegister(flag)
 	} else {
-		*sr &= ^statusRegister(flag)
+		*sr = *sr & statusRegister((^uint8(flag)))
 	}
 }
 
