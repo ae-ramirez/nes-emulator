@@ -4,7 +4,6 @@ import (
 	"al/nes-emulator/bus"
 	"al/nes-emulator/rom"
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -291,7 +290,7 @@ func (cpu *CPU) execOp(opcode *OpCode, code uint8) uint8 {
 	case 0x98:
 		cpu.tya()
 	case 0x00:
-		os.Exit(0)
+		cpu.brk()
 
 	// unofficial opcodes
 	case 0xa7, 0xb7, 0xaf, 0xbf, 0xa3, 0xb3:
