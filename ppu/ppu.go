@@ -81,7 +81,7 @@ func (ppu *PPU) WriteToPPUAddress(value uint8) {
 func (ppu *PPU) WriteToControl(value uint8) {
 	oldNMIStatus := ppu.control.isFlagSet(GenerateNMI)
 	ppu.control.write(value)
-	if oldNMIStatus &&
+	if !oldNMIStatus &&
 		ppu.control.isFlagSet(GenerateNMI) &&
 		ppu.status.isFlagSet(VerticalBlank) {
 		ppu.triggerInterruptNMI()
