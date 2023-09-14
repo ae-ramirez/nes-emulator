@@ -25,6 +25,7 @@ func main() {
 	}
 
 	c := &cpu.CPU{}
+	c.Bus.SetCallback(func() {})
 	rom := &rom.Rom{}
 	if err := rom.Init(nestestCode); err != nil {
 		log.Fatalf("Could not initialize rom: %s", err.Error())
