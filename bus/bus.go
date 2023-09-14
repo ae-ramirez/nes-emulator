@@ -9,9 +9,11 @@ import (
 type Bus struct {
 	cpuRam [2048]uint8
 	prgRom []uint8
-	ppu    ppu.PPU
+	Ppu    ppu.PPU
 
 	cycles uint
+
+	callback func()
 }
 
 // Mapped memory locations
@@ -30,11 +32,18 @@ const (
 
 func (bus *Bus) Tick(cycles uint8) {
 	bus.cycles += uint(cycles)
-	bus.ppu.Tick(cycles * 3)
+
+	nmiOld := bus.Ppu.PollInterruptNMI()
+	bus.Ppu.Tick(cycles * 3)
+	nmiNew := bus.Ppu.PollInterruptNMI()
+
+	if !nmiOld && nmiNew {
+		bus.callback()
+	}
 }
 
 func (bus *Bus) PollNMIStatus() bool {
-	return bus.ppu.PollInterruptNMI()
+	return bus.Ppu.PollInterruptNMI()
 }
 
 func (bus *Bus) GetCycles() uint {
@@ -43,8 +52,12 @@ func (bus *Bus) GetCycles() uint {
 
 func (bus *Bus) SetRom(rom *rom.Rom) {
 	bus.cycles = 7
-	bus.ppu.Init(rom.ChrRom, rom.ScreenMirroring)
+	bus.Ppu.Init(rom.ChrRom, rom.ScreenMirroring)
 	bus.prgRom = rom.PrgRom
+}
+
+func (bus *Bus) SetCallback(callback func()) {
+	bus.callback = callback
 }
 
 func (bus *Bus) MemRead(addr uint16) uint8 {
@@ -54,15 +67,15 @@ func (bus *Bus) MemRead(addr uint16) uint8 {
 		return bus.cpuRam[mirrored_addr]
 	case addr == 0x2000 || addr == 0x2001 || addr == 0x2003 ||
 		addr == 0x2005 || addr == 0x2006 || addr == 0x4014:
-		panic(fmt.Sprintf("Attempting to write to a read only PPU adress: %04x", addr))
+		return 0
 	case addr == 0x2002:
-		return bus.ppu.ReadStatus()
+		return bus.Ppu.ReadStatus()
 	case addr == 0x2004:
-		return bus.ppu.ReadOAMData()
+		return bus.Ppu.ReadOAMData()
 	case addr == 0x2007:
-		return bus.ppu.ReadData()
+		return bus.Ppu.ReadData()
 	case addr == 0x2008:
-		return bus.ppu.ReadData()
+		return bus.Ppu.ReadData()
 	case addr <= PPU_REGISTERS_MIRRORS_END:
 		mirroredAddr := addr & 0b0010_0000_0000_0111
 		return bus.MemRead(mirroredAddr)
@@ -85,19 +98,19 @@ func (bus *Bus) MemWrite(addr uint16, data uint8) {
 		mirrored_addr := addr & 0x7ff
 		bus.cpuRam[mirrored_addr] = data
 	case addr == 0x2000:
-		bus.ppu.WriteToControl(data)
+		bus.Ppu.WriteToControl(data)
 	case addr == 0x2001:
-		bus.ppu.WriteToMask(data)
+		bus.Ppu.WriteToMask(data)
 	case addr == 0x2003:
-		bus.ppu.WriteToOAMAddress(data)
+		bus.Ppu.WriteToOAMAddress(data)
 	case addr == 0x2004:
-		bus.ppu.WriteToOAMData(data)
+		bus.Ppu.WriteToOAMData(data)
 	case addr == 0x2005:
-		bus.ppu.WriteToScroll(data)
+		bus.Ppu.WriteToScroll(data)
 	case addr == 0x2006:
-		bus.ppu.WriteToPPUAddress(data)
+		bus.Ppu.WriteToPPUAddress(data)
 	case addr == 0x2007:
-		bus.ppu.WriteToData(data)
+		bus.Ppu.WriteToData(data)
 	case addr == 0x4014:
 		baseAddr := uint16(data) << 8
 		bus.copyToOamData(baseAddr)
@@ -139,6 +152,6 @@ func (bus *Bus) writePrgRom(addr uint16, data uint8) {
 func (bus *Bus) copyToOamData(baseAddr uint16) {
 	var i uint16
 	for i = 0; i < 256; i++ {
-		bus.ppu.WriteToOAMData(bus.MemRead(baseAddr + i))
+		bus.Ppu.WriteToOAMData(bus.MemRead(baseAddr + i))
 	}
 }

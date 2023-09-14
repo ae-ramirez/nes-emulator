@@ -6,8 +6,8 @@ import (
 )
 
 type PPU struct {
-	chrRom       []uint8
-	vram         [2048]uint8
+	ChrRom       []uint8
+	Vram         [2048]uint8
 	paletteTable [32]uint8
 	oamData      [256]uint8
 
@@ -32,7 +32,7 @@ type PPU struct {
 }
 
 func (ppu *PPU) Init(chrRom []uint8, mirroring rom.Mirroring) {
-	ppu.chrRom = chrRom
+	ppu.ChrRom = chrRom
 	ppu.mirroring = mirroring
 }
 
@@ -151,11 +151,11 @@ func (ppu *PPU) ReadData() uint8 {
 	switch {
 	case addr <= 0x1fff:
 		result := ppu.internalDataBuffer
-		ppu.internalDataBuffer = ppu.chrRom[addr]
+		ppu.internalDataBuffer = ppu.ChrRom[addr]
 		return result
 	case addr <= 0x2fff:
 		result := ppu.internalDataBuffer
-		ppu.internalDataBuffer = ppu.vram[ppu.vramMirrorAddress(addr)]
+		ppu.internalDataBuffer = ppu.Vram[ppu.vramMirrorAddress(addr)]
 		return result
 	case addr <= 0x3eff:
 		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
@@ -173,9 +173,9 @@ func (ppu *PPU) writeData(data uint8) {
 
 	switch {
 	case addr <= 0x1fff:
-		ppu.chrRom[addr] = data
+		ppu.ChrRom[addr] = data
 	case addr <= 0x2fff:
-		ppu.vram[ppu.vramMirrorAddress(addr)] = data
+		ppu.Vram[ppu.vramMirrorAddress(addr)] = data
 	case addr <= 0x3eff:
 		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
 	case addr <= 0x3fff:
