@@ -126,7 +126,7 @@ func (ppu *PPU) incrementVramAddress() {
 }
 
 func (ppu *PPU) vramMirrorAddress(addr uint16) uint16 {
-	mirroredVram := addr & 0b11_1111_1111_1111
+	mirroredVram := addr & 0b10_1111_1111_1111
 	vramIndex := mirroredVram - 0x2000
 	nameTable := vramIndex / 0x0400
 	if ppu.mirroring == rom.VERTICAL {
@@ -164,8 +164,8 @@ func (ppu *PPU) ReadData() uint8 {
 	case 0x3000 <= addr && addr <= 0x3eff:
 		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
 	case addr <= 0x3fff:
-		ppu.internalDataBuffer = ppu.paletteTable[addr-0x1000]
-		return ppu.paletteTable[addr-0x3f00]
+		ppu.internalDataBuffer = ppu.paletteTable[(addr-0x3f00) & 0b1_1111]
+		return ppu.internalDataBuffer
 	default:
 		panic(fmt.Sprintf("unexpected access to mirrored space, addr = %02X", addr))
 	}
@@ -183,7 +183,7 @@ func (ppu *PPU) writeData(data uint8) {
 	case 0x3000 <= addr && addr <= 0x3eff:
 		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
 	case addr <= 0x3fff:
-		ppu.paletteTable[addr-0x3f00] = data
+		ppu.paletteTable[(addr-0x3f00) & 0b11111] = data
 	default:
 		panic(fmt.Sprintf("unexpected write to mirrored space, addr = %02X", addr))
 	}
