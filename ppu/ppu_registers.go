@@ -98,11 +98,11 @@ func (sr scrollRegister) set(x uint8, y uint8) {
 	sr.posY = y
 }
 
-func (sr scrollRegister) write(data uint8, writePosX bool) {
-	if writePosX {
-		sr.posX = data
-	} else {
+func (sr scrollRegister) write(data uint8, writePosY bool) {
+	if writePosY {
 		sr.posY = data
+	} else {
+		sr.posX = data
 	}
 }
 
@@ -132,19 +132,12 @@ func (ar *AddrRegister) get() uint16 {
 	return (uint16(ar.valHi) << 8) | uint16(ar.valLow)
 }
 
-func (ar *AddrRegister) update(data uint8, loPtr bool) {
-	if loPtr {
-		ar.valHi = data
-	} else {
+func (ar *AddrRegister) update(data uint8, writeValLow bool) {
+	if writeValLow {
 		ar.valLow = data
+	} else {
+		ar.valHi = data & 0b11_1111
 	}
-
-	addr := ar.get()
-	if addr > 0x3fff {
-		addr = addr & 0b11_1111_1111_1111
-	}
-
-	ar.set(addr)
 }
 
 func (ar *AddrRegister) increment(data uint8) {

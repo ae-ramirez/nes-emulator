@@ -22,7 +22,7 @@ type PPU struct {
 	addr       AddrRegister    // 0x2006
 
 	// internal register
-	w_latch bool
+	wLatch bool
 	oamAddr uint8 // 0x2003
 
 	scanline uint16
@@ -60,7 +60,7 @@ func (ppu *PPU) Tick(cycles uint8) bool {
 }
 
 func (ppu *PPU) resetLatch() {
-	ppu.w_latch = false
+	ppu.wLatch = false
 }
 
 func (ppu *PPU) triggerInterruptNMI() {
@@ -74,8 +74,8 @@ func (ppu *PPU) PollInterruptNMI() bool {
 }
 
 func (ppu *PPU) WriteToPPUAddress(value uint8) {
-	ppu.addr.update(value, ppu.w_latch)
-	ppu.w_latch = !ppu.w_latch
+	ppu.addr.update(value, ppu.wLatch)
+	ppu.wLatch = !ppu.wLatch
 }
 
 func (ppu *PPU) WriteToControl(value uint8) {
@@ -113,8 +113,8 @@ func (ppu *PPU) ReadOAMData() uint8 {
 }
 
 func (ppu *PPU) WriteToScroll(value uint8) {
-	ppu.scroll.write(value, ppu.w_latch)
-	ppu.w_latch = !ppu.w_latch
+	ppu.scroll.write(value, ppu.wLatch)
+	ppu.wLatch = !ppu.wLatch
 }
 
 func (ppu *PPU) WriteToData(value uint8) {
