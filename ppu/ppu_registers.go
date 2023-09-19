@@ -21,7 +21,7 @@ func (cr controlRegister) isFlagSet(flag controlRegisterFlag) bool {
 }
 
 func (cr controlRegister) getvramAdressIncrementSize() uint8 {
-	if cr.isFlagSet(VramAddIncrement) {
+	if !cr.isFlagSet(VramAddIncrement) {
 		return 1
 	} else {
 		return 32

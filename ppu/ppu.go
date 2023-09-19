@@ -15,14 +15,14 @@ type PPU struct {
 	mirroring          rom.Mirroring
 
 	// registers
-	control    controlRegister // 0x2000
-	mask       maskRegister    // 0x2001
-	status     statusRegister  // 0x2002
-	scroll     scrollRegister  // 0x2005
-	addr       AddrRegister    // 0x2006
+	control controlRegister // 0x2000
+	mask    maskRegister    // 0x2001
+	status  statusRegister  // 0x2002
+	scroll  scrollRegister  // 0x2005
+	addr    AddrRegister    // 0x2006
 
 	// internal register
-	wLatch bool
+	wLatch  bool
 	oamAddr uint8 // 0x2003
 
 	scanline uint16
@@ -42,19 +42,22 @@ func (ppu *PPU) Tick(cycles uint8) bool {
 	if ppu.cycles >= 341 {
 		ppu.cycles = ppu.cycles - 341
 		ppu.scanline += 1
-	}
 
-	if ppu.scanline == 241 {
-		if ppu.control.isFlagSet(GenerateNMI) {
+		if ppu.scanline == 241 {
 			ppu.status.setFlag(VerticalBlank, true)
-			ppu.triggerInterruptNMI()
+			ppu.status.setFlag(SpriteZeroHit, false)
+			if ppu.control.isFlagSet(GenerateNMI) {
+				ppu.triggerInterruptNMI()
+			}
 		}
-	}
 
-	if ppu.scanline >= 262 {
-		ppu.scanline = 0
-		ppu.status.setFlag(VerticalBlank, false)
-		return true
+		if ppu.scanline >= 262 {
+			ppu.scanline = 0
+			ppu.ResetInterruptNMI()
+			ppu.status.setFlag(VerticalBlank, false)
+			ppu.status.setFlag(SpriteZeroHit, false)
+			return true
+		}
 	}
 	return false
 }
@@ -67,10 +70,22 @@ func (ppu *PPU) triggerInterruptNMI() {
 	ppu.interruptNMI = true
 }
 
+func (ppu *PPU) ResetInterruptNMI() {
+	ppu.interruptNMI = false
+}
+
 func (ppu *PPU) PollInterruptNMI() bool {
 	oldInterruptNMI := ppu.interruptNMI
 	ppu.interruptNMI = false
 	return oldInterruptNMI
+}
+
+func (ppu *PPU) BackgroundPatternAddress() uint16 {
+	if ppu.control.isFlagSet(BackgroundPatternAddress) {
+		return 0x1000
+	} else {
+		return 0x0000
+	}
 }
 
 func (ppu *PPU) WriteToPPUAddress(value uint8) {
@@ -164,7 +179,7 @@ func (ppu *PPU) ReadData() uint8 {
 	case 0x3000 <= addr && addr <= 0x3eff:
 		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
 	case addr <= 0x3fff:
-		ppu.internalDataBuffer = ppu.paletteTable[(addr-0x3f00) & 0b1_1111]
+		ppu.internalDataBuffer = ppu.paletteTable[(addr-0x3f00)&0b1_1111]
 		return ppu.internalDataBuffer
 	default:
 		panic(fmt.Sprintf("unexpected access to mirrored space, addr = %02X", addr))
@@ -183,7 +198,7 @@ func (ppu *PPU) writeData(data uint8) {
 	case 0x3000 <= addr && addr <= 0x3eff:
 		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
 	case addr <= 0x3fff:
-		ppu.paletteTable[(addr-0x3f00) & 0b11111] = data
+		ppu.paletteTable[(addr-0x3f00)&0b1_1111] = data
 	default:
 		panic(fmt.Sprintf("unexpected write to mirrored space, addr = %02X", addr))
 	}

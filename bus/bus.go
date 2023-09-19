@@ -33,11 +33,10 @@ const (
 func (bus *Bus) Tick(cycles uint8) {
 	bus.cycles += uint(cycles)
 
-	nmiOld := bus.Ppu.PollInterruptNMI()
-	bus.Ppu.Tick(cycles * 3)
-	nmiNew := bus.Ppu.PollInterruptNMI()
+	newFrame := bus.Ppu.Tick(cycles * 3)
 
-	if !nmiOld && nmiNew {
+	if newFrame {
+	// if !nmiOld && nmiNew {
 		bus.callback()
 	}
 }
