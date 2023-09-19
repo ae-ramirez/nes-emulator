@@ -203,3 +203,13 @@ func (ppu *PPU) writeData(data uint8) {
 		panic(fmt.Sprintf("unexpected write to mirrored space, addr = %02X", addr))
 	}
 }
+
+func (ppu *PPU) GetPalette(paletteN uint8) [4]uint8 {
+	var palette [4]uint8
+	paletteAddr := 1 + paletteN*4
+	palette[0] = ppu.paletteTable[0]
+	palette[1] = ppu.paletteTable[paletteAddr]
+	palette[2] = ppu.paletteTable[paletteAddr+1]
+	palette[3] = ppu.paletteTable[paletteAddr+2]
+	return palette
+}
