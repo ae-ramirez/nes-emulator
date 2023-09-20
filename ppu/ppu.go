@@ -9,7 +9,7 @@ type PPU struct {
 	ChrRom       []uint8
 	Vram         [2048]uint8
 	paletteTable [32]uint8
-	oamData      [256]uint8
+	OamData      [256]uint8
 
 	internalDataBuffer uint8
 	mirroring          rom.Mirroring
@@ -88,6 +88,14 @@ func (ppu *PPU) BackgroundPatternAddress() uint16 {
 	}
 }
 
+func (ppu *PPU) SpritePatternAddress() uint16 {
+	if ppu.control.isFlagSet(SpritePatternAddress) {
+		return 0x1000
+	} else {
+		return 0x0000
+	}
+}
+
 func (ppu *PPU) WriteToPPUAddress(value uint8) {
 	ppu.addr.update(value, ppu.wLatch)
 	ppu.wLatch = !ppu.wLatch
@@ -119,12 +127,12 @@ func (ppu *PPU) WriteToOAMAddress(value uint8) {
 }
 
 func (ppu *PPU) WriteToOAMData(value uint8) {
-	ppu.oamData[ppu.oamAddr] = value
+	ppu.OamData[ppu.oamAddr] = value
 	ppu.oamAddr += 1
 }
 
 func (ppu *PPU) ReadOAMData() uint8 {
-	return ppu.oamData[ppu.oamAddr]
+	return ppu.OamData[ppu.oamAddr]
 }
 
 func (ppu *PPU) WriteToScroll(value uint8) {
@@ -204,10 +212,20 @@ func (ppu *PPU) writeData(data uint8) {
 	}
 }
 
-func (ppu *PPU) GetPalette(paletteN uint8) [4]uint8 {
+func (ppu *PPU) GetBackgroundPalette(paletteN uint8) [4]uint8 {
 	var palette [4]uint8
-	paletteAddr := 1 + paletteN*4
+	paletteAddr := 0x01 + paletteN*4
 	palette[0] = ppu.paletteTable[0]
+	palette[1] = ppu.paletteTable[paletteAddr]
+	palette[2] = ppu.paletteTable[paletteAddr+1]
+	palette[3] = ppu.paletteTable[paletteAddr+2]
+	return palette
+}
+
+func (ppu *PPU) GetSpritePalette(paletteN uint8) [4]uint8 {
+	var palette [4]uint8
+	paletteAddr := 0x11 + paletteN*4
+	palette[0] = 0
 	palette[1] = ppu.paletteTable[paletteAddr]
 	palette[2] = ppu.paletteTable[paletteAddr+1]
 	palette[3] = ppu.paletteTable[paletteAddr+2]

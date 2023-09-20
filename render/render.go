@@ -21,38 +21,98 @@ func (frame *Frame) SetPixel(x int, y int, rgb [3]uint8) {
 	}
 }
 
-func Render(ppu *PPU.PPU, frame *Frame) {
-	bank := ppu.BackgroundPatternAddress()
+func getTile(ppu *PPU.PPU, tileN uint8, bankAddr uint16) []uint8 {
+	addr := bankAddr + uint16(tileN)*16
+	return ppu.ChrRom[addr : addr+16]
+}
 
+func Render(ppu *PPU.PPU, frame *Frame) {
+	drawBackground(ppu, frame)
+	drawSprites(ppu, frame)
+}
+
+func drawBackground(ppu *PPU.PPU, frame *Frame) {
+	bankAddr := ppu.BackgroundPatternAddress()
 	for i := 0; i < 0x03c0; i++ {
-		tileI := uint16(ppu.Vram[i])
+		tileN := ppu.Vram[i]
 		tileX := i % 32
 		tileY := i / 32
-		tile := ppu.ChrRom[(bank + tileI*16):(bank + tileI*16 + 16)]
-		palette := backgroundPalette(ppu, tileX, tileY)
+		tile := getTile(ppu, tileN, bankAddr)
+		palette := getBackgroundPalette(ppu, tileX, tileY)
 
-		for y := 0; y < 8; y++ {
-			upper := tile[y]
-			lower := tile[y+8]
+		drawBackgroundTile(frame, tile, palette, tileX, tileY)
+	}
+}
 
-			for x := 7; x >= 0; x-- {
-				value := (1&lower)<<1 | (1 & upper)
-				upper = upper >> 1
-				lower = lower >> 1
-				rgb := nesSystemColors[palette[value]]
-				frame.SetPixel(tileX*8+x, tileY*8+y, rgb)
-			}
+// NOTE: currently we aren't considering 8x16 sprites or sprite priorities
+// see: https://www.nesdev.org/wiki/PPU_OAM
+func drawSprites(ppu *PPU.PPU, frame *Frame) {
+	bankAddr := ppu.SpritePatternAddress()
+	for i := 0; i < 256; i += 4 {
+		spriteY := int(ppu.OamData[i])
+		spriteIndex := ppu.OamData[i+1]
+		spriteAttributes := ppu.OamData[i+2]
+		spriteX := int(ppu.OamData[i+3])
+
+		tile := getTile(ppu, spriteIndex, bankAddr)
+		palette := ppu.GetSpritePalette(spriteAttributes & 0b11)
+		mirrorH := spriteAttributes&0b1000_0000 != 0
+		mirrorV := spriteAttributes&0b0100_0000 != 0
+
+		drawSpriteTile(frame, tile, palette, spriteX, spriteY, mirrorH, mirrorV)
+	}
+}
+
+func drawBackgroundTile(frame *Frame, tile []uint8, palette [4]uint8, tileX int, tileY int) {
+	for y := 0; y < 8; y++ {
+		upper := tile[y]
+		lower := tile[y+8]
+		for x := 7; x >= 0; x-- {
+			value := (1&lower)<<1 | (1 & upper)
+			upper = upper >> 1
+			lower = lower >> 1
+			rgb := nesSystemColors[palette[value]]
+			frame.SetPixel(tileX*8+x, tileY*8+y, rgb)
 		}
 	}
 }
 
-func backgroundPalette(ppu *PPU.PPU, tileCol int, tileRow int) [4]uint8 {
+func drawSpriteTile(frame *Frame, tile []uint8, palette [4]uint8, tileX int, tileY int, mirrorH bool, mirrorV bool) {
+	for y := 0; y < 8; y++ {
+		upper := tile[y]
+		lower := tile[y+8]
+		for x := 7; x >= 0; x-- {
+			value := (1&lower)<<1 | (1 & upper)
+			upper = upper >> 1
+			lower = lower >> 1
+			if value == 0 {
+				continue
+			}
+			rgb := nesSystemColors[palette[value]]
+			xPos := tileX
+			yPos := tileY
+			if mirrorV {
+				xPos = xPos + 7 - x
+			} else {
+				xPos = xPos + x
+			}
+			if mirrorH {
+				yPos = yPos + 7 - y
+			} else {
+				yPos = yPos + y
+			}
+			frame.SetPixel(xPos, yPos, rgb)
+		}
+	}
+}
+
+func getBackgroundPalette(ppu *PPU.PPU, tileCol int, tileRow int) [4]uint8 {
 	attributeTableAddr := int(tileRow/4*8 + tileCol/4)
 	byte := ppu.Vram[0x3c0+attributeTableAddr]
 	metaTile := ((tileRow % 4 / 2) << 1) | (tileCol % 4 / 2)
 	shift := metaTile * 2
 	palette := (byte >> shift) & 0b11
-	return ppu.GetPalette(palette)
+	return ppu.GetBackgroundPalette(palette)
 }
 
 var nesSystemColors = [][3]uint8{
