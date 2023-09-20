@@ -93,12 +93,12 @@ type scrollRegister struct {
 	posY uint8
 }
 
-func (sr scrollRegister) set(x uint8, y uint8) {
+func (sr *scrollRegister) set(x uint8, y uint8) {
 	sr.posX = x
 	sr.posY = y
 }
 
-func (sr scrollRegister) write(data uint8, writePosY bool) {
+func (sr *scrollRegister) write(data uint8, writePosY bool) {
 	if writePosY {
 		sr.posY = data
 	} else {
@@ -144,7 +144,6 @@ func (ar *AddrRegister) increment(data uint8) {
 	lo := ar.valLow
 	ar.valLow += 1
 	if lo > ar.valLow {
-		ar.valHi += 1
-		ar.valHi = ar.valHi & 0b11_1111
+		ar.valHi = (ar.valHi + 1) & 0b11_1111
 	}
 }
