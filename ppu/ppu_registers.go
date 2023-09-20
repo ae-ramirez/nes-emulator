@@ -145,10 +145,6 @@ func (ar *AddrRegister) increment(data uint8) {
 	ar.valLow += 1
 	if lo > ar.valLow {
 		ar.valHi += 1
-	}
-
-	addr := ar.get()
-	if addr > 0x3fff {
-		addr = addr & 0b11_1111_1111_1111
+		ar.valHi = ar.valHi & 0b11_1111
 	}
 }
