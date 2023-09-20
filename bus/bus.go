@@ -153,8 +153,9 @@ func (bus *Bus) writePrgRom(addr uint16, data uint8) {
 }
 
 func (bus *Bus) copyToOamData(baseAddr uint16) {
-	var i uint16
-	for i = 0; i < 256; i++ {
-		bus.Ppu.WriteToOAMData(bus.MemRead(baseAddr + i))
+	data := make([]uint8, 256)
+	for i := 0; i < 256; i++ {
+		data[i] = bus.MemRead(baseAddr + uint16(i))
 	}
+	bus.Ppu.CopyToOamData(data)
 }

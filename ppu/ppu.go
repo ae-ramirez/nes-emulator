@@ -218,6 +218,14 @@ func (ppu *PPU) writeData(data uint8) {
 	}
 }
 
+func (ppu *PPU) CopyToOamData(data []uint8) {
+	var i uint16
+	for i = 0; i < 256; i++ {
+		ppu.OamData[ppu.oamAddr] = data[i]
+		ppu.oamAddr += 1
+	}
+}
+
 func (ppu *PPU) GetBackgroundPalette(paletteN uint8) [4]uint8 {
 	var palette [4]uint8
 	paletteAddr := 0x01 + paletteN*4
