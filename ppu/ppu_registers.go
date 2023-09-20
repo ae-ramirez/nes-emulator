@@ -142,7 +142,7 @@ func (ar *AddrRegister) update(data uint8, writeValLow bool) {
 
 func (ar *AddrRegister) increment(data uint8) {
 	lo := ar.valLow
-	ar.valLow += 1
+	ar.valLow += data
 	if lo > ar.valLow {
 		ar.valHi = (ar.valHi + 1) & 0b11_1111
 	}
