@@ -185,7 +185,7 @@ func (ppu *PPU) ReadData() uint8 {
 		ppu.internalDataBuffer = ppu.Vram[ppu.vramMirrorAddress(addr)]
 		return result
 	case 0x3000 <= addr && addr <= 0x3eff:
-		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
+		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %04X", addr))
 	case addr <= 0x3fff:
 		ppu.internalDataBuffer = ppu.Vram[ppu.vramMirrorAddress(addr-0x1000)]
 		if addr == 0x3f10 || addr == 0x3f14 || addr == 0x3f18 || addr == 0x3f1c {
@@ -193,7 +193,7 @@ func (ppu *PPU) ReadData() uint8 {
 		}
 		return ppu.paletteTable[(addr-0x3f00)&0b1_1111]
 	default:
-		panic(fmt.Sprintf("unexpected access to mirrored space, addr = %02X", addr))
+		panic(fmt.Sprintf("unexpected access to mirrored space, addr = %04X", addr))
 	}
 }
 
@@ -203,18 +203,18 @@ func (ppu *PPU) writeData(data uint8) {
 
 	switch {
 	case addr <= 0x1fff:
-		ppu.ChrRom[addr] = data
+		panic(fmt.Sprintf("trying to write to read-only chr rom memory, addr = %04X", addr))
 	case addr <= 0x2fff:
 		ppu.Vram[ppu.vramMirrorAddress(addr)] = data
 	case 0x3000 <= addr && addr <= 0x3eff:
-		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %02X", addr))
+		panic(fmt.Sprintf("addr space 0x3000..0x3eff is not expected to be used, addr = %04X", addr))
 	case addr <= 0x3fff:
 		if addr == 0x3f10 || addr == 0x3f14 || addr == 0x3f18 || addr == 0x3f1c {
 			addr = addr - 0x0010
 		}
 		ppu.paletteTable[(addr-0x3f00)&0b1_1111] = data
 	default:
-		panic(fmt.Sprintf("unexpected write to mirrored space, addr = %02X", addr))
+		panic(fmt.Sprintf("unexpected write to mirrored space, addr = %04X", addr))
 	}
 }
 
