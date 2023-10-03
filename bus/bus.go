@@ -1,15 +1,17 @@
 package bus
 
 import (
+	"al/nes-emulator/controller"
 	"al/nes-emulator/ppu"
 	"al/nes-emulator/rom"
 	"fmt"
 )
 
 type Bus struct {
-	cpuRam [2048]uint8
-	prgRom []uint8
-	Ppu    ppu.PPU
+	cpuRam     [2048]uint8
+	prgRom     []uint8
+	Ppu        ppu.PPU
+	controller controller.Controller
 
 	cycles uint
 
@@ -21,7 +23,8 @@ const (
 	CPU_RAM                   uint16 = 0x0000
 	CPU_RAM_MIRRORS_END              = 0x1fff
 	PPU_REGISTERS                    = 0x2000
-	PPU_REGISTERS_MIRRORS_END        = 0x401f
+	PPU_REGISTERS_MIRRORS_END        = 0x3fff
+	IO_REGISTER_END                  = 0x401f
 	ROM_EXPANSION                    = 0x4020
 	ROM_EXPANSION_END                = 0x5ffff
 	ROM_SAVE                         = 0x6000
@@ -36,7 +39,7 @@ func (bus *Bus) Tick(cycles uint8) {
 	newFrame := bus.Ppu.Tick(cycles * 3)
 
 	if newFrame {
-	// if !nmiOld && nmiNew {
+		// if !nmiOld && nmiNew {
 		bus.callback()
 	}
 }
@@ -82,6 +85,10 @@ func (bus *Bus) MemRead(addr uint16) uint8 {
 	case addr <= PPU_REGISTERS_MIRRORS_END:
 		mirroredAddr := addr & 0b0010_0000_0000_0111
 		return bus.MemRead(mirroredAddr)
+	case addr == 0x4016:
+		return bus.controller.ReadControllerData()
+	case addr <= IO_REGISTER_END:
+		return 0
 	case ROM_PROGRAM <= addr && addr <= ROM_PROGRAM_END:
 		return bus.readPrgRom(addr)
 	default:
@@ -120,6 +127,10 @@ func (bus *Bus) MemWrite(addr uint16, data uint8) {
 	case addr <= PPU_REGISTERS_MIRRORS_END:
 		mirroredAddr := addr & 0b0010_0000_0000_0111
 		bus.MemWrite(mirroredAddr, data)
+	case addr == 0x4016:
+		bus.controller.WriteToController(data)
+	case addr <= IO_REGISTER_END:
+		return
 	case ROM_PROGRAM <= addr && addr <= ROM_PROGRAM_END:
 		bus.writePrgRom(addr, data)
 	default:
